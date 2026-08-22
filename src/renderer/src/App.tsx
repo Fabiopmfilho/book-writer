@@ -1,6 +1,6 @@
 import './assets/main.css'
 
-function App() {
+const App = () => {
   return (
     <div className="app">
       <aside className="sidebar">
