@@ -67,6 +67,7 @@ function App() {
 
   useEffect(() => {
     if (!selection && chapters.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection({ type: 'chapter', id: chapters[0].id })
       return
     }
@@ -210,6 +211,12 @@ function App() {
             characters={characters}
             wordCount={wordCount}
             onUpdate={(field, value) => void updateChapter(field, value)}
+            onOpenCharacter={(characterId) =>
+              setSelection({
+                type: 'character',
+                id: characterId
+              })
+            }
           />
 
           <Inspector
