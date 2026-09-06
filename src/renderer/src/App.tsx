@@ -1,53 +1,57 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+
 import './assets/main.css'
 
-type Chapter = {
-  id: string
-  title: string
-  content: string
-  notes: string
+import Sidebar from './components/Sidebar'
+import Editor from './components/Editor'
+import Inspector from './components/Inspector'
+
+import type { Book, Chapter } from './types/book'
+
+const initialBook: Book = {
+  id: crypto.randomUUID(),
+  title: 'Meu Livro',
+
+  chapters: [
+    {
+      id: crypto.randomUUID(),
+      title: 'Capítulo 1',
+      content: '',
+      notes: ''
+    },
+    {
+      id: crypto.randomUUID(),
+      title: 'Capítulo 2',
+      content: '',
+      notes: ''
+    },
+    {
+      id: crypto.randomUUID(),
+      title: 'Capítulo 3',
+      content: '',
+      notes: ''
+    }
+  ]
 }
 
-const initialChapters: Chapter[] = [
-  {
-    id: '1',
-    title: 'Capítulo 1',
-    content: '',
-    notes: ''
-  },
-  {
-    id: '2',
-    title: 'Capítulo 2',
-    content: '',
-    notes: ''
-  },
-  {
-    id: '3',
-    title: 'Capítulo 3',
-    content: '',
-    notes: ''
-  }
-]
+function App() {
+  const [book, setBook] = useState<Book>(initialBook)
 
-const App = () => {
-  const [chapters, setChapters] = useState<Chapter[]>(initialChapters)
-  const [activeChapterId, setActiveChapterId] = useState('chapter-1')
+  const [activeChapterId, setActiveChapterId] = useState(book.chapters[0].id)
 
-  const activeChapter = chapters.find((chapter) => chapter.id === activeChapterId)
+  const activeChapter = book.chapters.find((chapter) => chapter.id === activeChapterId)
 
-  const wordCount = useMemo(() => {
-    if (!activeChapter?.content.trim()) {
-      return 0
-    }
-
-    return activeChapter.content.trim().split(/\s+/).length
-  }, [activeChapter?.content])
+  const wordCount = activeChapter?.content.trim()
+    ? activeChapter.content.trim().split(/\s+/).length
+    : 0
 
   const characterCount = activeChapter?.content.length ?? 0
 
-  function updateActiveChapter(field: keyof Chapter, value: string) {
-    setChapters((currentChapters) =>
-      currentChapters.map((chapter) =>
+  function updateChapter(field: keyof Pick<Chapter, 'title' | 'content' | 'notes'>, value: string) {
+    setBook((currentBook) => ({
+      ...currentBook,
+
+      chapters: currentBook.chapters.map((chapter) =>
         chapter.id === activeChapterId
           ? {
               ...chapter,
@@ -55,18 +59,22 @@ const App = () => {
             }
           : chapter
       )
-    )
+    }))
   }
 
   function createChapter() {
     const newChapter: Chapter = {
       id: crypto.randomUUID(),
-      title: `Capítulo ${chapters.length + 1}`,
+      title: `Capítulo ${book.chapters.length + 1}`,
       content: '',
       notes: ''
     }
 
-    setChapters((currentChapters) => [...currentChapters, newChapter])
+    setBook((currentBook) => ({
+      ...currentBook,
+
+      chapters: [...currentBook.chapters, newChapter]
+    }))
 
     setActiveChapterId(newChapter.id)
   }
@@ -77,73 +85,26 @@ const App = () => {
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h1>Book Writer</h1>
-          <button>+</button>
-        </div>
+      <Sidebar
+        bookTitle={book.title}
+        chapters={book.chapters}
+        activeChapterId={activeChapterId}
+        onSelectChapter={setActiveChapterId}
+        onCreateChapter={createChapter}
+      />
 
-        <div className="project-name">
-          <span>📖</span>
-          Meu Livro
-        </div>
+      <Editor
+        chapter={activeChapter}
+        wordCount={wordCount}
+        onUpdate={(field, value) => updateChapter(field, value)}
+      />
 
-        <div className="chapters">
-          <div className="chapter active">
-            <span>▸</span>
-            Capítulo 1
-          </div>
-
-          <div className="chapter">
-            <span>▸</span>
-            Capítulo 2
-          </div>
-
-          <div className="chapter">
-            <span>▸</span>
-            Capítulo 3
-          </div>
-        </div>
-      </aside>
-
-      <main className="editor-area">
-        <header className="editor-header">
-          <span>Capítulo 1</span>
-        </header>
-
-        <div className="editor">
-          <input className="chapter-title" defaultValue="Capítulo 1" />
-
-          <textarea className="editor-text" placeholder="Comece a escrever..." />
-        </div>
-
-        <footer className="editor-footer">
-          <span>0 palavras</span>
-          <span>Salvo</span>
-        </footer>
-      </main>
-
-      <aside className="inspector">
-        <div className="inspector-header">
-          <h2>Informações</h2>
-        </div>
-
-        <div className="inspector-section">
-          <label>Palavras</label>
-          <strong>0</strong>
-        </div>
-
-        <div className="inspector-section">
-          <label>Caracteres</label>
-          <strong>0</strong>
-        </div>
-
-        <div className="inspector-section">
-          <label>Notas</label>
-
-          <textarea placeholder="Adicione uma nota..." />
-        </div>
-      </aside>
+      <Inspector
+        chapter={activeChapter}
+        wordCount={wordCount}
+        characterCount={characterCount}
+        onUpdateNotes={(notes) => updateChapter('notes', notes)}
+      />
     </div>
   )
 }
