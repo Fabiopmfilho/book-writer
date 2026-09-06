@@ -261,3 +261,123 @@ button {
 
   background: #fff;
 }
+
+.editor-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color, #dedede);
+}
+
+.editor-toolbar button {
+  min-width: 32px;
+  height: 30px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.editor-toolbar button:hover {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.editor-toolbar button.active {
+  background: rgba(127, 127, 127, 0.22);
+}
+
+.editor-document {
+  min-height: 500px;
+  padding: 24px 8px;
+  line-height: 1.8;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.editor-document p {
+  margin: 0 0 1em;
+}
+
+.editor-document h2 {
+  margin: 1.5em 0 0.75em;
+}
+
+.editor-document blockquote {
+  margin: 1em 0;
+  padding-left: 16px;
+  border-left: 3px solid #888;
+  color: #666;
+}
+
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px 6px;
+  color: #666;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sidebar-section-header button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+}
+
+.sidebar-section-header button:hover {
+  background: #d5d5d1;
+}
+
+.sidebar-empty {
+  margin: 6px 20px;
+  color: #888;
+  font-size: 12px;
+}
+
+.character-editor {
+  gap: 24px;
+}
+
+.character-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.character-field span {
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.character-field textarea {
+  flex: 1;
+  min-height: 300px;
+  padding: 18px;
+  resize: none;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  outline: none;
+  background: #fafafa;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.character-field textarea:focus {
+  border-color: #999;
+  background: #fff;
+}
+
+.reference-name {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}

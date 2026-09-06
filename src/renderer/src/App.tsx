@@ -3,16 +3,20 @@ import { useLiveQuery } from 'dexie-react-hooks'
 
 import './assets/main.css'
 
+import CharacterEditor from './components/CharacterEditor'
 import Editor from './components/Editor'
 import Inspector from './components/Inspector'
 import Sidebar from './components/Sidebar'
 import { db } from './database/db'
+import type { CharacterRecord } from './database/models'
 import { ensureInitialBook } from './database/seed'
 import type { Chapter } from './types/book'
 
+type Selection = { type: 'chapter'; id: string } | { type: 'character'; id: string }
+
 function App() {
   const [activeBookId, setActiveBookId] = useState<string | null>(null)
-  const [activeChapterId, setActiveChapterId] = useState<string | null>(null)
+  const [selection, setSelection] = useState<Selection | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -48,29 +52,69 @@ function App() {
     [] as Chapter[]
   )
 
+  const characters = useLiveQuery(
+    async (): Promise<CharacterRecord[]> => {
+      if (!activeBookId) {
+        return []
+      }
+
+      return db.characters.where('bookId').equals(activeBookId).sortBy('name')
+    },
+    [activeBookId],
+    [] as CharacterRecord[]
+  )
+
   useEffect(() => {
-    if (chapters.length > 0 && !chapters.some((chapter) => chapter.id === activeChapterId)) {
-      setActiveChapterId(chapters[0].id)
+    if (!selection && chapters.length > 0) {
+      setSelection({ type: 'chapter', id: chapters[0].id })
+      return
     }
-  }, [chapters, activeChapterId])
 
-  const activeChapter = chapters.find((chapter) => chapter.id === activeChapterId)
+    if (
+      selection?.type === 'chapter' &&
+      !chapters.some((chapter) => chapter.id === selection.id) &&
+      chapters.length > 0
+    ) {
+      setSelection({ type: 'chapter', id: chapters[0].id })
+    }
 
-  const wordCount = activeChapter?.content.trim()
-    ? activeChapter.content.trim().split(/\s+/).length
-    : 0
+    if (
+      selection?.type === 'character' &&
+      !characters.some((character) => character.id === selection.id) &&
+      chapters.length > 0
+    ) {
+      setSelection({ type: 'chapter', id: chapters[0].id })
+    }
+  }, [chapters, characters, selection])
 
-  const characterCount = activeChapter?.content.length ?? 0
+  const activeChapter =
+    selection?.type === 'chapter'
+      ? chapters.find((chapter) => chapter.id === selection.id)
+      : undefined
+
+  const activeCharacter =
+    selection?.type === 'character'
+      ? characters.find((character) => character.id === selection.id)
+      : undefined
+
+  const plainText = activeChapter
+    ? (new DOMParser()
+        .parseFromString(activeChapter.content, 'text/html')
+        .body.textContent?.trim() ?? '')
+    : ''
+
+  const wordCount = plainText ? plainText.split(/\s+/).length : 0
+  const characterCount = plainText.length
 
   async function updateChapter(
     field: keyof Pick<Chapter, 'title' | 'content' | 'notes'>,
     value: string
   ) {
-    if (!activeChapterId) {
+    if (!activeChapter) {
       return
     }
 
-    await db.documents.update(activeChapterId, {
+    await db.documents.update(activeChapter.id, {
       [field]: value,
       updatedAt: new Date()
     })
@@ -95,10 +139,44 @@ function App() {
     }
 
     await db.documents.add(chapter)
-    setActiveChapterId(chapter.id)
+    setSelection({ type: 'chapter', id: chapter.id })
   }
 
-  if (!book || !activeChapter) {
+  async function createCharacter() {
+    if (!activeBookId) {
+      return
+    }
+
+    const now = new Date()
+
+    const character: CharacterRecord = {
+      id: crypto.randomUUID(),
+      bookId: activeBookId,
+      name: `Personagem ${characters.length + 1}`,
+      description: '',
+      createdAt: now,
+      updatedAt: now
+    }
+
+    await db.characters.add(character)
+    setSelection({ type: 'character', id: character.id })
+  }
+
+  async function updateCharacter(
+    field: keyof Pick<CharacterRecord, 'name' | 'description'>,
+    value: string
+  ) {
+    if (!activeCharacter) {
+      return
+    }
+
+    await db.characters.update(activeCharacter.id, {
+      [field]: value,
+      updatedAt: new Date()
+    })
+  }
+
+  if (!book) {
     return <div className="app-loading">Carregando livro...</div>
   }
 
@@ -107,23 +185,51 @@ function App() {
       <Sidebar
         bookTitle={book.title}
         chapters={chapters}
-        activeChapterId={activeChapter.id}
-        onSelectChapter={setActiveChapterId}
+        characters={characters}
+        activeChapterId={selection?.type === 'chapter' ? selection.id : null}
+        activeCharacterId={selection?.type === 'character' ? selection.id : null}
+        onSelectChapter={(id) => setSelection({ type: 'chapter', id })}
+        onSelectCharacter={(id) => setSelection({ type: 'character', id })}
         onCreateChapter={() => void createChapter()}
+        onCreateCharacter={() => void createCharacter()}
       />
 
-      <Editor
-        chapter={activeChapter}
-        wordCount={wordCount}
-        onUpdate={(field, value) => void updateChapter(field, value)}
-      />
+      {activeChapter && (
+        <>
+          <Editor
+            chapter={activeChapter}
+            wordCount={wordCount}
+            onUpdate={(field, value) => void updateChapter(field, value)}
+          />
 
-      <Inspector
-        chapter={activeChapter}
-        wordCount={wordCount}
-        characterCount={characterCount}
-        onUpdateNotes={(notes) => void updateChapter('notes', notes)}
-      />
+          <Inspector
+            chapter={activeChapter}
+            wordCount={wordCount}
+            characterCount={characterCount}
+            onUpdateNotes={(notes) => void updateChapter('notes', notes)}
+          />
+        </>
+      )}
+
+      {activeCharacter && (
+        <>
+          <CharacterEditor
+            character={activeCharacter}
+            onUpdate={(field, value) => void updateCharacter(field, value)}
+          />
+
+          <aside className="inspector">
+            <div className="inspector-header">
+              <h2>Referências</h2>
+            </div>
+
+            <div className="inspector-section">
+              <label>Como mencionar</label>
+              <strong className="reference-name">@{activeCharacter.name}</strong>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   )
 }
