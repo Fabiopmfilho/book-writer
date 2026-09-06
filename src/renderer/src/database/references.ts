@@ -1,37 +1,58 @@
 import { db } from './db'
 
-export async function updateCharacterReferences(
-  characterId: string,
-  characterName: string
-): Promise<void> {
-  const displayName = characterName.trim() || 'Personagem sem nome'
+function replaceReferenceName(
+  content: string,
+  entityId: string,
+  entityName: string
+): string | null {
+  if (!content.includes(entityId)) {
+    return null
+  }
 
-  const documents = await db.documents
-    .filter((document) => document.content.includes(characterId))
-    .toArray()
+  const parsedContent = new DOMParser().parseFromString(content, 'text/html')
 
-  await db.transaction('rw', db.documents, async () => {
+  const mentions = parsedContent.querySelectorAll('[data-type="mention"]')
+
+  let changed = false
+
+  mentions.forEach((mention) => {
+    if (mention.getAttribute('data-id') !== entityId) {
+      return
+    }
+
+    mention.setAttribute('data-label', entityName)
+    mention.textContent = entityName
+    changed = true
+  })
+
+  return changed ? parsedContent.body.innerHTML : null
+}
+
+export async function updateEntityReferences(entityId: string, newName: string): Promise<void> {
+  const displayName = newName.trim() || 'Sem nome'
+  const documents = await db.documents.toArray()
+  const locations = await db.locations.toArray()
+  const now = new Date()
+
+  await db.transaction('rw', db.documents, db.locations, async () => {
     for (const documentRecord of documents) {
-      const parsedContent = new DOMParser().parseFromString(documentRecord.content, 'text/html')
+      const content = replaceReferenceName(documentRecord.content, entityId, displayName)
 
-      const mentions = parsedContent.querySelectorAll('[data-type="mention"]')
-
-      let changed = false
-
-      mentions.forEach((mention) => {
-        if (mention.getAttribute('data-id') !== characterId) {
-          return
-        }
-
-        mention.setAttribute('data-label', displayName)
-        mention.textContent = `@${displayName}`
-        changed = true
-      })
-
-      if (changed) {
+      if (content) {
         await db.documents.update(documentRecord.id, {
-          content: parsedContent.body.innerHTML,
-          updatedAt: new Date()
+          content,
+          updatedAt: now
+        })
+      }
+    }
+
+    for (const location of locations) {
+      const description = replaceReferenceName(location.description, entityId, displayName)
+
+      if (description) {
+        await db.locations.update(location.id, {
+          description,
+          updatedAt: now
         })
       }
     }

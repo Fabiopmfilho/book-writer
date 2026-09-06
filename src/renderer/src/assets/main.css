@@ -436,3 +436,30 @@ button {
   white-space: nowrap;
   cursor: pointer;
 }
+
+.reference-description-editor {
+  flex: 1;
+  min-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.reference-description-editor:focus-within {
+  border-color: #999;
+  background: #fff;
+}
+
+.location-document {
+  min-height: 280px;
+  padding: 18px;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.character-mention[data-mention-suggestion-char='#'] {
+  background: #e0eee5;
+  color: #376348;
+}
