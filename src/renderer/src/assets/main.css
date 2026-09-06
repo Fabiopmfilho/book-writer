@@ -484,3 +484,63 @@ button {
   color: #b44343;
   font-weight: 600;
 }
+
+.document-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.document-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chapter-toggle,
+.document-add-button {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #777;
+}
+
+.chapter-toggle:hover,
+.document-add-button:hover {
+  background: #d5d5d1;
+  color: #333;
+}
+
+.document-title {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.document-title span:last-child,
+.scene span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.scene {
+  padding-left: 38px;
+}
+
+.scene-empty {
+  margin: 4px 10px 6px 40px;
+  color: #999;
+  font-size: 11px;
+  font-style: italic;
+}

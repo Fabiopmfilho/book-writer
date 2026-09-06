@@ -19,6 +19,7 @@ type SidebarProps = {
   onCreateChapter: () => void
   onCreateCharacter: () => void
   onCreateLocation: () => void
+  onCreateScene: (chapterId: string) => void
 }
 
 function Sidebar({
@@ -34,7 +35,8 @@ function Sidebar({
   onSelectLocation,
   onCreateChapter,
   onCreateCharacter,
-  onCreateLocation
+  onCreateLocation,
+  onCreateScene
 }: SidebarProps) {
   return (
     <aside className="sidebar">
@@ -58,6 +60,7 @@ function Sidebar({
         chapters={chapters}
         activeChapterId={activeChapterId ?? ''}
         onSelectChapter={onSelectChapter}
+        onCreateScene={onCreateScene}
       />
 
       <div className="sidebar-section-header">

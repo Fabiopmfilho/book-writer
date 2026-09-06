@@ -141,6 +141,10 @@ function App() {
   async function createChapter() {
     if (!activeBookId) return
 
+    const rootChapters = chapters.filter(
+      (document) => document.type === 'chapter' && document.parentId === null
+    )
+
     const now = new Date()
 
     const chapter: Chapter = {
@@ -148,16 +152,42 @@ function App() {
       bookId: activeBookId,
       parentId: null,
       type: 'chapter',
-      title: `Capítulo ${chapters.length + 1}`,
+      title: `Capítulo ${rootChapters.length + 1}`,
       content: '',
       notes: '',
-      order: chapters.length,
+      order: rootChapters.length,
       createdAt: now,
       updatedAt: now
     }
 
     await db.documents.add(chapter)
     setSelection({ type: 'chapter', id: chapter.id })
+  }
+
+  async function createScene(parentChapterId: string) {
+    if (!activeBookId) return
+
+    const siblingScenes = chapters.filter(
+      (document) => document.type === 'scene' && document.parentId === parentChapterId
+    )
+
+    const now = new Date()
+
+    const scene: Chapter = {
+      id: crypto.randomUUID(),
+      bookId: activeBookId,
+      parentId: parentChapterId,
+      type: 'scene',
+      title: `Cena ${siblingScenes.length + 1}`,
+      content: '',
+      notes: '',
+      order: siblingScenes.length,
+      createdAt: now,
+      updatedAt: now
+    }
+
+    await db.documents.add(scene)
+    setSelection({ type: 'chapter', id: scene.id })
   }
 
   async function createCharacter() {
@@ -261,6 +291,7 @@ function App() {
         onSelectCharacter={(id) => setSelection({ type: 'character', id })}
         onSelectLocation={(id) => setSelection({ type: 'location', id })}
         onCreateChapter={() => void createChapter()}
+        onCreateScene={(chapterId) => void createScene(chapterId)}
         onCreateCharacter={() => void createCharacter()}
         onCreateLocation={() => void createLocation()}
       />
