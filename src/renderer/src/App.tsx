@@ -22,6 +22,8 @@ type Selection =
 function App() {
   const [activeBookId, setActiveBookId] = useState<string | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [sidebarVisible, setSidebarVisible] = useState(true)
+  const [inspectorVisible, setInspectorVisible] = useState(true)
 
   useEffect(() => {
     let mounted = true
@@ -277,8 +279,36 @@ function App() {
     return <div className="app-loading">Carregando livro...</div>
   }
 
+  const appClassName = [
+    'app',
+    !sidebarVisible ? 'sidebar-hidden' : '',
+    !inspectorVisible ? 'inspector-hidden' : ''
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className="app">
+    <div className={appClassName}>
+      <button
+        type="button"
+        className="panel-toggle sidebar-panel-toggle"
+        onClick={() => setSidebarVisible((visible) => !visible)}
+        title={sidebarVisible ? 'Ocultar barra lateral' : 'Mostrar barra lateral'}
+        aria-label={sidebarVisible ? 'Ocultar barra lateral' : 'Mostrar barra lateral'}
+      >
+        {sidebarVisible ? '‹‹' : '››'}
+      </button>
+
+      <button
+        type="button"
+        className="panel-toggle inspector-panel-toggle"
+        onClick={() => setInspectorVisible((visible) => !visible)}
+        title={inspectorVisible ? 'Ocultar inspetor' : 'Mostrar inspetor'}
+        aria-label={inspectorVisible ? 'Ocultar inspetor' : 'Mostrar inspetor'}
+      >
+        {inspectorVisible ? '››' : '‹‹'}
+      </button>
+
       <Sidebar
         bookTitle={book.title}
         chapters={chapters}

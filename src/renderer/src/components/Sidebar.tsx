@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import type { CharacterRecord, LocationRecord } from '../database/models'
 import type { Chapter } from '../types/book'
 
@@ -17,9 +19,9 @@ type SidebarProps = {
   onSelectCharacter: (id: string) => void
   onSelectLocation: (id: string) => void
   onCreateChapter: () => void
+  onCreateScene: (chapterId: string) => void
   onCreateCharacter: () => void
   onCreateLocation: () => void
-  onCreateScene: (chapterId: string) => void
 }
 
 function Sidebar({
@@ -34,10 +36,14 @@ function Sidebar({
   onSelectCharacter,
   onSelectLocation,
   onCreateChapter,
+  onCreateScene,
   onCreateCharacter,
-  onCreateLocation,
-  onCreateScene
+  onCreateLocation
 }: SidebarProps) {
+  const [manuscriptOpen, setManuscriptOpen] = useState(false)
+  const [charactersOpen, setCharactersOpen] = useState(false)
+  const [locationsOpen, setLocationsOpen] = useState(false)
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -46,48 +52,108 @@ function Sidebar({
 
       <div className="project-name">
         <span>📖</span>
-        {bookTitle}
+        <span>{bookTitle}</span>
       </div>
 
       <div className="sidebar-section-header">
-        <span>Manuscrito</span>
-        <button type="button" onClick={onCreateChapter}>
+        <button
+          type="button"
+          className="sidebar-section-toggle"
+          onClick={() => setManuscriptOpen((open) => !open)}
+          aria-expanded={manuscriptOpen}
+        >
+          <span className="section-chevron">{manuscriptOpen ? '▾' : '▸'}</span>
+
+          <span>Manuscrito</span>
+        </button>
+
+        <button
+          type="button"
+          className="sidebar-section-add"
+          onClick={() => {
+            setManuscriptOpen(true)
+            onCreateChapter()
+          }}
+          title="Novo capítulo"
+        >
           +
         </button>
       </div>
 
-      <ChapterList
-        chapters={chapters}
-        activeChapterId={activeChapterId ?? ''}
-        onSelectChapter={onSelectChapter}
-        onCreateScene={onCreateScene}
-      />
+      {manuscriptOpen && (
+        <ChapterList
+          chapters={chapters}
+          activeChapterId={activeChapterId ?? ''}
+          onSelectChapter={onSelectChapter}
+          onCreateScene={onCreateScene}
+        />
+      )}
 
       <div className="sidebar-section-header">
-        <span>Personagens</span>
-        <button type="button" onClick={onCreateCharacter}>
+        <button
+          type="button"
+          className="sidebar-section-toggle"
+          onClick={() => setCharactersOpen((open) => !open)}
+          aria-expanded={charactersOpen}
+        >
+          <span className="section-chevron">{charactersOpen ? '▾' : '▸'}</span>
+
+          <span>Personagens</span>
+        </button>
+
+        <button
+          type="button"
+          className="sidebar-section-add"
+          onClick={() => {
+            setCharactersOpen(true)
+            onCreateCharacter()
+          }}
+          title="Novo personagem"
+        >
           +
         </button>
       </div>
 
-      <CharacterList
-        characters={characters}
-        activeCharacterId={activeCharacterId}
-        onSelectCharacter={onSelectCharacter}
-      />
+      {charactersOpen && (
+        <CharacterList
+          characters={characters}
+          activeCharacterId={activeCharacterId}
+          onSelectCharacter={onSelectCharacter}
+        />
+      )}
 
       <div className="sidebar-section-header">
-        <span>Lugares</span>
-        <button type="button" onClick={onCreateLocation}>
+        <button
+          type="button"
+          className="sidebar-section-toggle"
+          onClick={() => setLocationsOpen((open) => !open)}
+          aria-expanded={locationsOpen}
+        >
+          <span className="section-chevron">{locationsOpen ? '▾' : '▸'}</span>
+
+          <span>Lugares</span>
+        </button>
+
+        <button
+          type="button"
+          className="sidebar-section-add"
+          onClick={() => {
+            setLocationsOpen(true)
+            onCreateLocation()
+          }}
+          title="Novo lugar"
+        >
           +
         </button>
       </div>
 
-      <LocationList
-        locations={locations}
-        activeLocationId={activeLocationId}
-        onSelectLocation={onSelectLocation}
-      />
+      {locationsOpen && (
+        <LocationList
+          locations={locations}
+          activeLocationId={activeLocationId}
+          onSelectLocation={onSelectLocation}
+        />
+      )}
     </aside>
   )
 }

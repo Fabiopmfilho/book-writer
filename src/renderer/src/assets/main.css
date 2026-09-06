@@ -35,11 +35,22 @@ button {
 .app {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 260px;
-
   width: 100%;
   height: 100vh;
-
   overflow: hidden;
+  transition: grid-template-columns 180ms ease;
+}
+
+.app.sidebar-hidden {
+  grid-template-columns: 0 minmax(0, 1fr) 260px;
+}
+
+.app.inspector-hidden {
+  grid-template-columns: 260px minmax(0, 1fr) 0;
+}
+
+.app.sidebar-hidden.inspector-hidden {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
 }
 
 /* SIDEBAR */
@@ -76,6 +87,117 @@ button {
 
   background: #d5d5d1;
   font-size: 20px;
+}
+
+.sidebar,
+.inspector {
+  min-width: 0;
+  overflow: hidden;
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease;
+}
+
+.app.sidebar-hidden .sidebar,
+.app.inspector-hidden .inspector {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.sidebar-section-header {
+  gap: 4px;
+}
+
+.sidebar-section-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  width: auto !important;
+  height: 28px !important;
+  padding: 0 4px !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  text-align: left;
+}
+
+.sidebar-section-toggle:hover {
+  color: #222;
+}
+
+.sidebar-section-add {
+  flex: 0 0 24px;
+}
+
+.section-chevron {
+  display: inline-block;
+  width: 12px;
+  color: #777;
+  text-align: center;
+}
+
+.project-name span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-toggle {
+  position: fixed;
+  top: 12px;
+  z-index: 100;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #777;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: none;
+  transform: none;
+  transition:
+    left 180ms ease,
+    right 180ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.panel-toggle:hover {
+  background: rgba(127, 127, 127, 0.14);
+  color: #222;
+}
+
+/* Dentro do cabeçalho da barra esquerda */
+.sidebar-panel-toggle {
+  left: 220px;
+}
+
+.app.sidebar-hidden .sidebar-panel-toggle {
+  left: 12px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Dentro do cabeçalho do inspetor */
+.inspector-panel-toggle {
+  right: 12px;
+}
+
+.app.inspector-hidden .inspector-panel-toggle {
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Reserva espaço quando o botão estiver sobre o editor */
+.app.sidebar-hidden .editor-header {
+  padding-left: 58px;
+}
+
+.app.inspector-hidden .editor-header {
+  padding-right: 58px;
 }
 
 .project-name {

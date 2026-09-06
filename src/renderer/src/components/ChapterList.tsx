@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type { Chapter } from '../types/book'
 
@@ -20,20 +20,6 @@ function ChapterList({
   const rootChapters = chapters
     .filter((document) => document.type === 'chapter' && document.parentId === null)
     .sort((first, second) => first.order - second.order)
-
-  useEffect(() => {
-    setExpandedChapterIds((currentIds) => {
-      const nextIds = new Set(currentIds)
-
-      rootChapters.forEach((chapter) => {
-        if (!nextIds.has(chapter.id)) {
-          nextIds.add(chapter.id)
-        }
-      })
-
-      return nextIds
-    })
-  }, [chapters])
 
   function toggleChapter(chapterId: string) {
     setExpandedChapterIds((currentIds) => {
