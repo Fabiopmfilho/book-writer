@@ -11,6 +11,7 @@ import { db } from './database/db'
 import type { CharacterRecord } from './database/models'
 import { ensureInitialBook } from './database/seed'
 import type { Chapter } from './types/book'
+import { updateCharacterReferences } from './database/references'
 
 type Selection = { type: 'chapter'; id: string } | { type: 'character'; id: string }
 
@@ -176,6 +177,14 @@ function App() {
     })
   }
 
+  async function commitCharacterName() {
+    if (!activeCharacter) {
+      return
+    }
+
+    await updateCharacterReferences(activeCharacter.id, activeCharacter.name)
+  }
+
   if (!book) {
     return <div className="app-loading">Carregando livro...</div>
   }
@@ -198,6 +207,7 @@ function App() {
         <>
           <Editor
             chapter={activeChapter}
+            characters={characters}
             wordCount={wordCount}
             onUpdate={(field, value) => void updateChapter(field, value)}
           />
@@ -216,6 +226,7 @@ function App() {
           <CharacterEditor
             character={activeCharacter}
             onUpdate={(field, value) => void updateCharacter(field, value)}
+            onCommitName={() => void commitCharacterName()}
           />
 
           <aside className="inspector">

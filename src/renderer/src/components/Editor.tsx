@@ -1,18 +1,43 @@
 import { useEffect } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import Mention from '@tiptap/extension-mention'
+import type { CharacterRecord } from '../database/models'
 
 import type { Chapter } from '../types/book'
 
 type EditorProps = {
   chapter: Chapter
+  characters: CharacterRecord[]
   wordCount: number
   onUpdate: (field: 'title' | 'content', value: string) => void
 }
 
-function Editor({ chapter, wordCount, onUpdate }: EditorProps) {
+function Editor({ chapter, characters, wordCount, onUpdate }: EditorProps) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'character-mention'
+        },
+        renderText({ node }) {
+          return `@${node.attrs.label}`
+        },
+        renderHTML({ node, HTMLAttributes }) {
+          return [
+            'span',
+            {
+              ...HTMLAttributes,
+              'data-type': 'mention',
+              'data-id': node.attrs.id,
+              'data-label': node.attrs.label
+            },
+            `@${node.attrs.label}`
+          ]
+        }
+      })
+    ],
     content: chapter.content || '<p></p>',
     editorProps: {
       attributes: {
@@ -71,6 +96,48 @@ function Editor({ chapter, wordCount, onUpdate }: EditorProps) {
           >
             I
           </button>
+
+          <select
+            className="character-reference-select"
+            defaultValue=""
+            onChange={(event) => {
+              const character = characters.find((item) => item.id === event.target.value)
+
+              if (!character || !editor) {
+                return
+              }
+
+              editor
+                .chain()
+                .focus()
+                .insertContent([
+                  {
+                    type: 'mention',
+                    attrs: {
+                      id: character.id,
+                      label: character.name
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: ' '
+                  }
+                ])
+                .run()
+
+              event.target.value = ''
+            }}
+          >
+            <option value="" disabled>
+              Inserir personagem…
+            </option>
+
+            {characters.map((character) => (
+              <option key={character.id} value={character.id}>
+                {character.name}
+              </option>
+            ))}
+          </select>
 
           <button
             type="button"

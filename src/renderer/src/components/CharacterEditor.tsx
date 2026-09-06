@@ -3,9 +3,10 @@ import type { CharacterRecord } from '../database/models'
 type CharacterEditorProps = {
   character: CharacterRecord
   onUpdate: (field: keyof Pick<CharacterRecord, 'name' | 'description'>, value: string) => void
+  onCommitName: () => void
 }
 
-function CharacterEditor({ character, onUpdate }: CharacterEditorProps) {
+function CharacterEditor({ character, onUpdate, onCommitName }: CharacterEditorProps) {
   return (
     <main className="editor-area">
       <header className="editor-header">
@@ -17,6 +18,12 @@ function CharacterEditor({ character, onUpdate }: CharacterEditorProps) {
           className="chapter-title"
           value={character.name}
           onChange={(event) => onUpdate('name', event.target.value)}
+          onBlur={onCommitName}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.currentTarget.blur()
+            }
+          }}
           placeholder="Nome do personagem"
         />
 
