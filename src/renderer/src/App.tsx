@@ -1,45 +1,60 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
 
 import './assets/main.css'
 
-import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
 import Inspector from './components/Inspector'
-
-import type { Book, Chapter } from './types/book'
-
-const initialBook: Book = {
-  id: crypto.randomUUID(),
-  title: 'Meu Livro',
-
-  chapters: [
-    {
-      id: crypto.randomUUID(),
-      title: 'Capítulo 1',
-      content: '',
-      notes: ''
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Capítulo 2',
-      content: '',
-      notes: ''
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Capítulo 3',
-      content: '',
-      notes: ''
-    }
-  ]
-}
+import Sidebar from './components/Sidebar'
+import { db } from './database/db'
+import { ensureInitialBook } from './database/seed'
+import type { Chapter } from './types/book'
 
 function App() {
-  const [book, setBook] = useState<Book>(initialBook)
+  const [activeBookId, setActiveBookId] = useState<string | null>(null)
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null)
 
-  const [activeChapterId, setActiveChapterId] = useState(book.chapters[0].id)
+  useEffect(() => {
+    let mounted = true
 
-  const activeChapter = book.chapters.find((chapter) => chapter.id === activeChapterId)
+    void ensureInitialBook().then((bookId) => {
+      if (mounted) {
+        setActiveBookId(bookId)
+      }
+    })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const book = useLiveQuery(() => {
+    if (!activeBookId) {
+      return undefined
+    }
+
+    return db.books.get(activeBookId)
+  }, [activeBookId])
+
+  const chapters = useLiveQuery(
+    () => {
+      if (!activeBookId) {
+        return Promise.resolve([])
+      }
+
+      return db.documents.where('bookId').equals(activeBookId).sortBy('order')
+    },
+    [activeBookId],
+    []
+  )
+
+  useEffect(() => {
+    if (chapters.length > 0 && !chapters.some((chapter) => chapter.id === activeChapterId)) {
+      setActiveChapterId(chapters[0].id)
+    }
+  }, [chapters, activeChapterId])
+
+  const activeChapter = chapters.find((chapter) => chapter.id === activeChapterId)
 
   const wordCount = activeChapter?.content.trim()
     ? activeChapter.content.trim().split(/\s+/).length
@@ -47,63 +62,67 @@ function App() {
 
   const characterCount = activeChapter?.content.length ?? 0
 
-  function updateChapter(field: keyof Pick<Chapter, 'title' | 'content' | 'notes'>, value: string) {
-    setBook((currentBook) => ({
-      ...currentBook,
-
-      chapters: currentBook.chapters.map((chapter) =>
-        chapter.id === activeChapterId
-          ? {
-              ...chapter,
-              [field]: value
-            }
-          : chapter
-      )
-    }))
-  }
-
-  function createChapter() {
-    const newChapter: Chapter = {
-      id: crypto.randomUUID(),
-      title: `Capítulo ${book.chapters.length + 1}`,
-      content: '',
-      notes: ''
+  async function updateChapter(
+    field: keyof Pick<Chapter, 'title' | 'content' | 'notes'>,
+    value: string
+  ) {
+    if (!activeChapterId) {
+      return
     }
 
-    setBook((currentBook) => ({
-      ...currentBook,
-
-      chapters: [...currentBook.chapters, newChapter]
-    }))
-
-    setActiveChapterId(newChapter.id)
+    await db.documents.update(activeChapterId, {
+      [field]: value,
+      updatedAt: new Date()
+    })
   }
 
-  if (!activeChapter) {
-    return null
+  async function createChapter() {
+    if (!activeBookId) {
+      return
+    }
+
+    const chapter: Chapter = {
+      id: crypto.randomUUID(),
+      bookId: activeBookId,
+      parentId: null,
+      type: 'chapter',
+      title: `Capítulo ${chapters.length + 1}`,
+      content: '',
+      notes: '',
+      order: chapters.length,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
+    await db.documents.add(chapter)
+    setActiveChapterId(chapter.id)
+  }
+
+  if (!book || !activeChapter) {
+    return <div className="app-loading">Carregando livro...</div>
   }
 
   return (
     <div className="app">
       <Sidebar
         bookTitle={book.title}
-        chapters={book.chapters}
-        activeChapterId={activeChapterId}
+        chapters={chapters}
+        activeChapterId={activeChapter.id}
         onSelectChapter={setActiveChapterId}
-        onCreateChapter={createChapter}
+        onCreateChapter={() => void createChapter()}
       />
 
       <Editor
         chapter={activeChapter}
         wordCount={wordCount}
-        onUpdate={(field, value) => updateChapter(field, value)}
+        onUpdate={(field, value) => void updateChapter(field, value)}
       />
 
       <Inspector
         chapter={activeChapter}
         wordCount={wordCount}
         characterCount={characterCount}
-        onUpdateNotes={(notes) => updateChapter('notes', notes)}
+        onUpdateNotes={(notes) => void updateChapter('notes', notes)}
       />
     </div>
   )
