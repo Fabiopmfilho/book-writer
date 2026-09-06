@@ -463,3 +463,24 @@ button {
   background: #e0eee5;
   color: #376348;
 }
+
+.save-status {
+  transition: color 150ms ease;
+}
+
+.save-status.editing {
+  color: #8a6d3b;
+}
+
+.save-status.saving {
+  color: #526d9b;
+}
+
+.save-status.saved {
+  color: #5b7d61;
+}
+
+.save-status.error {
+  color: #b44343;
+  font-weight: 600;
+}

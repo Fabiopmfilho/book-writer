@@ -4,6 +4,8 @@ import StarterKit from '@tiptap/starter-kit'
 
 import type { Chapter } from '../types/book'
 
+import { useDebouncedSave } from '../hooks/useDebouncedSave'
+
 import type { CharacterRecord, LocationRecord } from '../database/models'
 import { createReferenceMention } from './referenceMention'
 
@@ -12,14 +14,8 @@ type EditorProps = {
   characters: CharacterRecord[]
   wordCount: number
   locations: LocationRecord[]
-  onUpdate: (field: 'title' | 'content', value: string) => void
-  onOpenCharacter: (characterId: string) => void
+  onUpdate: (field: 'title' | 'content', value: string) => void | Promise<void>
   onOpenReference: (entityId: string) => void
-}
-
-type MentionItem = {
-  id: string
-  label: string
 }
 
 function Editor({
@@ -27,12 +23,10 @@ function Editor({
   characters,
   wordCount,
   onUpdate,
-  onOpenCharacter,
   locations,
   onOpenReference
 }: EditorProps) {
   const charactersRef = useRef(characters)
-  const openCharacterRef = useRef(onOpenCharacter)
   const locationsRef = useRef(locations)
   const openReferenceRef = useRef(onOpenReference)
 
@@ -45,12 +39,20 @@ function Editor({
   }, [onOpenReference])
 
   useEffect(() => {
-    openCharacterRef.current = onOpenCharacter
-  }, [onOpenCharacter])
-
-  useEffect(() => {
     charactersRef.current = characters
   }, [characters])
+
+  const { status: saveStatus, scheduleSave: scheduleContentSave } = useDebouncedSave(
+    (content) => onUpdate('content', content),
+    500
+  )
+
+  const saveStatusLabel = {
+    editing: 'Editando…',
+    saving: 'Salvando…',
+    saved: 'Salvo',
+    error: 'Erro ao salvar'
+  }[saveStatus]
 
   const editor = useEditor({
     extensions: [
@@ -88,7 +90,7 @@ function Editor({
     },
 
     onUpdate({ editor: currentEditor }) {
-      onUpdate('content', currentEditor.getHTML())
+      scheduleContentSave(currentEditor.getHTML())
     }
   })
 
@@ -163,7 +165,7 @@ function Editor({
 
       <footer className="editor-footer">
         <span>{wordCount.toLocaleString('pt-BR')} palavras</span>
-        <span>Salvo</span>
+        <span className={`save-status ${saveStatus}`}>{saveStatusLabel}</span>
       </footer>
     </main>
   )

@@ -4,11 +4,15 @@ import StarterKit from '@tiptap/starter-kit'
 
 import type { CharacterRecord, LocationRecord } from '../database/models'
 import { createReferenceMention } from './referenceMention'
+import { useDebouncedSave } from '../hooks/useDebouncedSave'
 
 type LocationEditorProps = {
   location: LocationRecord
   characters: CharacterRecord[]
-  onUpdate: (field: keyof Pick<LocationRecord, 'name' | 'description'>, value: string) => void
+  onUpdate: (
+    field: keyof Pick<LocationRecord, 'name' | 'description'>,
+    value: string
+  ) => void | Promise<void>
   onCommitName: () => void
   onOpenCharacter: (characterId: string) => void
 }
@@ -31,9 +35,22 @@ function LocationEditor({
     openCharacterRef.current = onOpenCharacter
   }, [onOpenCharacter])
 
+  const { status: saveStatus, scheduleSave: scheduleDescriptionSave } = useDebouncedSave(
+    (description) => onUpdate('description', description),
+    500
+  )
+
+  const saveStatusLabel = {
+    editing: 'Editando…',
+    saving: 'Salvando…',
+    saved: 'Salvo',
+    error: 'Erro ao salvar'
+  }[saveStatus]
+
   const editor = useEditor({
     extensions: [
       StarterKit,
+      // eslint-disable-next-line react-hooks/refs
       createReferenceMention({
         getCharacters: () => charactersRef.current
       })
@@ -60,7 +77,7 @@ function LocationEditor({
     },
 
     onUpdate({ editor: currentEditor }) {
-      onUpdate('description', currentEditor.getHTML())
+      scheduleDescriptionSave(currentEditor.getHTML())
     }
   })
 
@@ -86,7 +103,9 @@ function LocationEditor({
         <input
           className="chapter-title"
           value={location.name}
-          onChange={(event) => onUpdate('name', event.target.value)}
+          onChange={(event) => {
+            void onUpdate('name', event.target.value)
+          }}
           onBlur={onCommitName}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -107,7 +126,7 @@ function LocationEditor({
 
       <footer className="editor-footer">
         <span>Use @ para mencionar personagens</span>
-        <span>Salvo</span>
+        <span className={`save-status ${saveStatus}`}>{saveStatusLabel}</span>
       </footer>
     </main>
   )

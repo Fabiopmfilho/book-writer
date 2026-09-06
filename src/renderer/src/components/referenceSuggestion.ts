@@ -1,3 +1,4 @@
+import type { MentionNodeAttrs } from '@tiptap/extension-mention'
 import type { SuggestionOptions } from '@tiptap/suggestion'
 
 export type ReferenceItem = {
@@ -8,7 +9,7 @@ export type ReferenceItem = {
 export function createReferenceSuggestion(
   char: '@' | '#',
   getItems: () => ReferenceItem[]
-): SuggestionOptions<ReferenceItem, ReferenceItem> {
+): Omit<SuggestionOptions<ReferenceItem, MentionNodeAttrs>, 'editor'> {
   return {
     char,
 
@@ -90,11 +91,11 @@ export function createReferenceSuggestion(
           popup.className = 'mention-suggestion'
           document.body.appendChild(popup)
 
-          draw(props.items, (item) => props.command(item), props.clientRect?.())
+          draw(props.items, (item) => props.command(item as MentionNodeAttrs), props.clientRect?.())
         },
 
         onUpdate(props) {
-          draw(props.items, (item) => props.command(item), props.clientRect?.())
+          draw(props.items, (item) => props.command(item as MentionNodeAttrs), props.clientRect?.())
         },
 
         onKeyDown({ event }) {

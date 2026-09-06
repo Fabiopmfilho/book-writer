@@ -268,11 +268,12 @@ function App() {
       {activeChapter && (
         <>
           <Editor
+            key={activeChapter.id}
             chapter={activeChapter}
             characters={characters}
             locations={locations}
             wordCount={wordCount}
-            onUpdate={(field, value) => void updateChapter(field, value)}
+            onUpdate={(field, value) => updateChapter(field, value)}
             onOpenReference={openReference}
           />
 
@@ -309,9 +310,10 @@ function App() {
       {activeLocation && (
         <>
           <LocationEditor
+            key={activeLocation.id}
             location={activeLocation}
             characters={characters}
-            onUpdate={(field, value) => void updateLocation(field, value)}
+            onUpdate={(field, value) => updateLocation(field, value)}
             onCommitName={() => void commitLocationName()}
             onOpenCharacter={(characterId) =>
               setSelection({
