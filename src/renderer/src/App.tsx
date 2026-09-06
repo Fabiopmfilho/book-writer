@@ -37,15 +37,15 @@ function App() {
   }, [activeBookId])
 
   const chapters = useLiveQuery(
-    () => {
+    async (): Promise<Chapter[]> => {
       if (!activeBookId) {
-        return Promise.resolve([])
+        return []
       }
 
       return db.documents.where('bookId').equals(activeBookId).sortBy('order')
     },
     [activeBookId],
-    []
+    [] as Chapter[]
   )
 
   useEffect(() => {
