@@ -19,7 +19,7 @@ import type { Chapter } from './types/book'
 
 type Selection =
   | { type: 'home' }
-  | { type: 'chapter'; id: string }
+  | { type: 'document'; id: string }
   | { type: 'character'; id: string }
   | { type: 'location'; id: string }
 
@@ -52,7 +52,7 @@ function App() {
     return db.books.get(activeBookId)
   }, [activeBookId])
 
-  const chapters = useLiveQuery(
+  const documents = useLiveQuery(
     async (): Promise<Chapter[]> => {
       if (!activeBookId) {
         return []
@@ -90,12 +90,13 @@ function App() {
 
   useEffect(() => {
     if (!selection) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection({ type: 'home' })
       return
     }
 
-    const chapterMissing =
-      selection?.type === 'chapter' && !chapters.some((chapter) => chapter.id === selection.id)
+    const documentMissing =
+      selection?.type === 'document' && !documents.some((chapter) => chapter.id === selection.id)
 
     const characterMissing =
       selection?.type === 'character' &&
@@ -104,14 +105,14 @@ function App() {
     const locationMissing =
       selection?.type === 'location' && !locations.some((location) => location.id === selection.id)
 
-    if (chapterMissing || characterMissing || locationMissing) {
+    if (documentMissing || characterMissing || locationMissing) {
       setSelection({ type: 'home' })
     }
-  }, [chapters, characters, locations, selection])
+  }, [documents, characters, locations, selection])
 
-  const activeChapter =
-    selection?.type === 'chapter'
-      ? chapters.find((chapter) => chapter.id === selection.id)
+  const activeDocument =
+    selection?.type === 'document'
+      ? documents.find((chapter) => chapter.id === selection.id)
       : undefined
 
   const activeCharacter =
@@ -124,22 +125,22 @@ function App() {
       ? locations.find((location) => location.id === selection.id)
       : undefined
 
-  const plainText = activeChapter
+  const plainText = activeDocument
     ? (new DOMParser()
-        .parseFromString(activeChapter.content, 'text/html')
+        .parseFromString(activeDocument.content, 'text/html')
         .body.textContent?.trim() ?? '')
     : ''
 
   const wordCount = plainText ? plainText.split(/\s+/).length : 0
   const characterCount = plainText.length
 
-  async function updateChapter(
+  async function updateDocument(
     field: keyof Pick<Chapter, 'title' | 'content' | 'notes'>,
     value: string
   ) {
-    if (!activeChapter) return
+    if (!activeDocument) return
 
-    await db.documents.update(activeChapter.id, {
+    await db.documents.update(activeDocument.id, {
       [field]: value,
       updatedAt: new Date()
     })
@@ -148,7 +149,7 @@ function App() {
   async function createChapter() {
     if (!activeBookId) return
 
-    const rootChapters = chapters.filter(
+    const rootChapters = documents.filter(
       (document) => document.type === 'chapter' && document.parentId === null
     )
 
@@ -168,13 +169,13 @@ function App() {
     }
 
     await db.documents.add(chapter)
-    setSelection({ type: 'chapter', id: chapter.id })
+    setSelection({ type: 'document', id: chapter.id })
   }
 
   async function createScene(parentChapterId: string) {
     if (!activeBookId) return
 
-    const siblingScenes = chapters.filter(
+    const siblingScenes = documents.filter(
       (document) => document.type === 'scene' && document.parentId === parentChapterId
     )
 
@@ -194,17 +195,17 @@ function App() {
     }
 
     await db.documents.add(scene)
-    setSelection({ type: 'chapter', id: scene.id })
+    setSelection({ type: 'document', id: scene.id })
   }
 
   async function deleteDocument(documentId: string) {
-    const documentRecord = chapters.find((document) => document.id === documentId)
+    const documentRecord = documents.find((document) => document.id === documentId)
 
     if (!documentRecord) return
 
     const childScenes =
       documentRecord.type === 'chapter'
-        ? chapters.filter((document) => document.parentId === documentRecord.id)
+        ? documents.filter((document) => document.parentId === documentRecord.id)
         : []
 
     const message =
@@ -249,7 +250,7 @@ function App() {
       }
     })
 
-    if (selection?.type === 'chapter' && deletedIds.has(selection.id)) {
+    if (selection?.type === 'document' && deletedIds.has(selection.id)) {
       setSelection(null)
     }
   }
@@ -375,13 +376,13 @@ function App() {
         homeActive={selection?.type === 'home'}
         onSelectHome={() => setSelection({ type: 'home' })}
         bookTitle={book.title}
-        chapters={chapters}
+        chapters={documents}
         characters={characters}
         locations={locations}
-        activeChapterId={selection?.type === 'chapter' ? selection.id : null}
+        activeChapterId={selection?.type === 'document' ? selection.id : null}
         activeCharacterId={selection?.type === 'character' ? selection.id : null}
         activeLocationId={selection?.type === 'location' ? selection.id : null}
-        onSelectChapter={(id) => setSelection({ type: 'chapter', id })}
+        onSelectChapter={(id) => setSelection({ type: 'document', id })}
         onSelectCharacter={(id) => setSelection({ type: 'character', id })}
         onSelectLocation={(id) => setSelection({ type: 'location', id })}
         onCreateChapter={() => void createChapter()}
@@ -394,8 +395,8 @@ function App() {
       {selection?.type === 'home' && (
         <>
           <HomePage
-            documents={chapters}
-            onOpenChapter={(id) => setSelection({ type: 'chapter', id })}
+            documents={documents}
+            onOpenChapter={(id) => setSelection({ type: 'document', id })}
             onCreateChapter={() => void createChapter()}
           />
 
@@ -409,7 +410,7 @@ function App() {
 
               <strong>
                 {
-                  chapters.filter(
+                  documents.filter(
                     (document) => document.type === 'chapter' && document.parentId === null
                   ).length
                 }
@@ -419,7 +420,7 @@ function App() {
             <div className="inspector-section">
               <label>Cenas</label>
 
-              <strong>{chapters.filter((document) => document.type === 'scene').length}</strong>
+              <strong>{documents.filter((document) => document.type === 'scene').length}</strong>
             </div>
 
             <div className="inspector-section">
@@ -435,23 +436,23 @@ function App() {
         </>
       )}
 
-      {activeChapter && (
+      {activeDocument && (
         <>
           <Editor
-            key={activeChapter.id}
-            chapter={activeChapter}
+            key={activeDocument.id}
+            chapter={activeDocument}
             characters={characters}
             locations={locations}
             wordCount={wordCount}
-            onUpdate={(field, value) => updateChapter(field, value)}
+            onUpdate={(field, value) => updateDocument(field, value)}
             onOpenReference={openReference}
           />
 
           <Inspector
-            chapter={activeChapter}
+            chapter={activeDocument}
             wordCount={wordCount}
             characterCount={characterCount}
-            onUpdateNotes={(notes) => void updateChapter('notes', notes)}
+            onUpdateNotes={(notes) => void updateDocument('notes', notes)}
           />
         </>
       )}
