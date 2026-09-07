@@ -17,24 +17,19 @@ function ChapterList({
   onCreateScene,
   onDeleteDocument
 }: ChapterListProps) {
-  const [expandedChapterIds, setExpandedChapterIds] = useState<Set<string>>(new Set())
+  const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null)
 
   const rootChapters = chapters
     .filter((document) => document.type === 'chapter' && document.parentId === null)
     .sort((first, second) => first.order - second.order)
 
   function toggleChapter(chapterId: string) {
-    setExpandedChapterIds((currentIds) => {
-      const nextIds = new Set(currentIds)
+    setExpandedChapterId((currentId) => (currentId === chapterId ? null : chapterId))
+  }
 
-      if (nextIds.has(chapterId)) {
-        nextIds.delete(chapterId)
-      } else {
-        nextIds.add(chapterId)
-      }
-
-      return nextIds
-    })
+  function createScene(chapterId: string) {
+    setExpandedChapterId(chapterId)
+    onCreateScene(chapterId)
   }
 
   return (
@@ -44,7 +39,7 @@ function ChapterList({
           .filter((document) => document.type === 'scene' && document.parentId === chapter.id)
           .sort((first, second) => first.order - second.order)
 
-        const expanded = expandedChapterIds.has(chapter.id)
+        const expanded = expandedChapterId === chapter.id
 
         return (
           <div key={chapter.id} className="document-group">
@@ -54,14 +49,17 @@ function ChapterList({
                 className="chapter-toggle"
                 onClick={() => toggleChapter(chapter.id)}
                 title={expanded ? 'Recolher capítulo' : 'Expandir capítulo'}
+                aria-expanded={expanded}
+                aria-label={expanded ? `Recolher ${chapter.title}` : `Expandir ${chapter.title}`}
               >
                 {expanded ? '▾' : '▸'}
               </button>
 
               <button
                 type="button"
-                className={`chapter document-title ${chapter.id === activeChapterId ? 'active' : ''
-                  }`}
+                className={`chapter document-title ${
+                  chapter.id === activeChapterId ? 'active' : ''
+                }`}
                 onClick={() => onSelectChapter(chapter.id)}
               >
                 <span>▤</span>
@@ -82,43 +80,43 @@ function ChapterList({
               <button
                 type="button"
                 className="document-add-button"
-                onClick={() => {
-                  setExpandedChapterIds((currentIds) => {
-                    const nextIds = new Set(currentIds)
-                    nextIds.add(chapter.id)
-                    return nextIds
-                  })
-
-                  onCreateScene(chapter.id)
-                }}
+                onClick={() => createScene(chapter.id)}
                 title="Nova cena"
+                aria-label={`Criar cena em ${chapter.title}`}
               >
                 +
               </button>
             </div>
 
-            {scenes.map((scene, sceneIndex) => (
-              <div key={scene.id} className="scene-row">
-                <button
-                  type="button"
-                  className={`chapter scene ${scene.id === activeChapterId ? 'active' : ''}`}
-                  onClick={() => onSelectChapter(scene.id)}
-                >
-                  <span>◦</span>
-                  <span>{scene.title || `Cena ${sceneIndex + 1}`}</span>
-                </button>
+            {expanded && (
+              <div className="scene-list">
+                {scenes.map((scene, sceneIndex) => (
+                  <div key={scene.id} className="scene-row">
+                    <button
+                      type="button"
+                      className={`chapter scene ${scene.id === activeChapterId ? 'active' : ''}`}
+                      onClick={() => onSelectChapter(scene.id)}
+                    >
+                      <span>◦</span>
 
-                <button
-                  type="button"
-                  className="document-delete-button"
-                  onClick={() => onDeleteDocument(scene.id)}
-                  title="Excluir cena"
-                  aria-label={`Excluir ${scene.title}`}
-                >
-                  ×
-                </button>
+                      <span>{scene.title || `Cena ${sceneIndex + 1}`}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="document-delete-button"
+                      onClick={() => onDeleteDocument(scene.id)}
+                      title="Excluir cena"
+                      aria-label={`Excluir ${scene.title}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {scenes.length === 0 && <p className="scene-empty">Nenhuma cena</p>}
               </div>
-            ))}
+            )}
           </div>
         )
       })}
