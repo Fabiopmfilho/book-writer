@@ -22,6 +22,9 @@ type SidebarProps = {
   onCreateScene: (chapterId: string) => void
   onCreateCharacter: () => void
   onCreateLocation: () => void
+  onDeleteDocument: (id: string) => void
+  homeActive: boolean
+  onSelectHome: () => void
 }
 
 function Sidebar({
@@ -37,8 +40,11 @@ function Sidebar({
   onSelectLocation,
   onCreateChapter,
   onCreateScene,
+  onDeleteDocument,
   onCreateCharacter,
-  onCreateLocation
+  onCreateLocation,
+  homeActive,
+  onSelectHome
 }: SidebarProps) {
   const [manuscriptOpen, setManuscriptOpen] = useState(false)
   const [charactersOpen, setCharactersOpen] = useState(false)
@@ -50,10 +56,14 @@ function Sidebar({
         <h1>Book Writer</h1>
       </div>
 
-      <div className="project-name">
+      <button
+        type="button"
+        className={`project-name ${homeActive ? 'active' : ''}`}
+        onClick={onSelectHome}
+      >
         <span>📖</span>
         <span>{bookTitle}</span>
-      </div>
+      </button>
 
       <div className="sidebar-section-header">
         <button
@@ -64,7 +74,7 @@ function Sidebar({
         >
           <span className="section-chevron">{manuscriptOpen ? '▾' : '▸'}</span>
 
-          <span>Manuscrito</span>
+          <span>Capítulos</span>
         </button>
 
         <button
@@ -86,6 +96,7 @@ function Sidebar({
           activeChapterId={activeChapterId ?? ''}
           onSelectChapter={onSelectChapter}
           onCreateScene={onCreateScene}
+          onDeleteDocument={onDeleteDocument}
         />
       )}
 

@@ -8,13 +8,17 @@ import Editor from './components/Editor'
 import Inspector from './components/Inspector'
 import LocationEditor from './components/LocationEditor'
 import Sidebar from './components/Sidebar'
+import HomePage from './components/HomePage'
+
 import { db } from './database/db'
 import type { CharacterRecord, LocationRecord } from './database/models'
 import { updateEntityReferences } from './database/references'
 import { ensureInitialBook } from './database/seed'
+
 import type { Chapter } from './types/book'
 
 type Selection =
+  | { type: 'home' }
   | { type: 'chapter'; id: string }
   | { type: 'character'; id: string }
   | { type: 'location'; id: string }
@@ -31,6 +35,7 @@ function App() {
     void ensureInitialBook().then((bookId) => {
       if (mounted) {
         setActiveBookId(bookId)
+        setSelection({ type: 'home' })
       }
     })
 
@@ -84,8 +89,8 @@ function App() {
   )
 
   useEffect(() => {
-    if (!selection && chapters.length > 0) {
-      setSelection({ type: 'chapter', id: chapters[0].id })
+    if (!selection) {
+      setSelection({ type: 'home' })
       return
     }
 
@@ -99,8 +104,8 @@ function App() {
     const locationMissing =
       selection?.type === 'location' && !locations.some((location) => location.id === selection.id)
 
-    if ((chapterMissing || characterMissing || locationMissing) && chapters.length > 0) {
-      setSelection({ type: 'chapter', id: chapters[0].id })
+    if (chapterMissing || characterMissing || locationMissing) {
+      setSelection({ type: 'home' })
     }
   }, [chapters, characters, locations, selection])
 
@@ -190,6 +195,63 @@ function App() {
 
     await db.documents.add(scene)
     setSelection({ type: 'chapter', id: scene.id })
+  }
+
+  async function deleteDocument(documentId: string) {
+    const documentRecord = chapters.find((document) => document.id === documentId)
+
+    if (!documentRecord) return
+
+    const childScenes =
+      documentRecord.type === 'chapter'
+        ? chapters.filter((document) => document.parentId === documentRecord.id)
+        : []
+
+    const message =
+      documentRecord.type === 'chapter'
+        ? childScenes.length > 0
+          ? `Excluir "${documentRecord.title}" e suas ${childScenes.length} cenas?`
+          : `Excluir o capítulo "${documentRecord.title}"?`
+        : `Excluir a cena "${documentRecord.title}"?`
+
+    if (!window.confirm(message)) {
+      return
+    }
+
+    const deletedIds = new Set([documentRecord.id, ...childScenes.map((scene) => scene.id)])
+
+    await db.transaction('rw', db.documents, async () => {
+      if (childScenes.length > 0) {
+        await db.documents.bulkDelete(childScenes.map((scene) => scene.id))
+      }
+
+      await db.documents.delete(documentRecord.id)
+
+      const remainingDocuments = await db.documents
+        .where('bookId')
+        .equals(documentRecord.bookId)
+        .toArray()
+
+      const siblings = remainingDocuments
+        .filter(
+          (document) =>
+            document.type === documentRecord.type && document.parentId === documentRecord.parentId
+        )
+        .sort((first, second) => first.order - second.order)
+
+      for (const [index, sibling] of siblings.entries()) {
+        if (sibling.order !== index) {
+          await db.documents.update(sibling.id, {
+            order: index,
+            updatedAt: new Date()
+          })
+        }
+      }
+    })
+
+    if (selection?.type === 'chapter' && deletedIds.has(selection.id)) {
+      setSelection(null)
+    }
   }
 
   async function createCharacter() {
@@ -310,6 +372,8 @@ function App() {
       </button>
 
       <Sidebar
+        homeActive={selection?.type === 'home'}
+        onSelectHome={() => setSelection({ type: 'home' })}
         bookTitle={book.title}
         chapters={chapters}
         characters={characters}
@@ -322,9 +386,54 @@ function App() {
         onSelectLocation={(id) => setSelection({ type: 'location', id })}
         onCreateChapter={() => void createChapter()}
         onCreateScene={(chapterId) => void createScene(chapterId)}
+        onDeleteDocument={(documentId) => void deleteDocument(documentId)}
         onCreateCharacter={() => void createCharacter()}
         onCreateLocation={() => void createLocation()}
       />
+
+      {selection?.type === 'home' && (
+        <>
+          <HomePage
+            documents={chapters}
+            onOpenChapter={(id) => setSelection({ type: 'chapter', id })}
+            onCreateChapter={() => void createChapter()}
+          />
+
+          <aside className="inspector">
+            <div className="inspector-header">
+              <h2>Projeto</h2>
+            </div>
+
+            <div className="inspector-section">
+              <label>Capítulos</label>
+
+              <strong>
+                {
+                  chapters.filter(
+                    (document) => document.type === 'chapter' && document.parentId === null
+                  ).length
+                }
+              </strong>
+            </div>
+
+            <div className="inspector-section">
+              <label>Cenas</label>
+
+              <strong>{chapters.filter((document) => document.type === 'scene').length}</strong>
+            </div>
+
+            <div className="inspector-section">
+              <label>Personagens</label>
+              <strong>{characters.length}</strong>
+            </div>
+
+            <div className="inspector-section">
+              <label>Lugares</label>
+              <strong>{locations.length}</strong>
+            </div>
+          </aside>
+        </>
+      )}
 
       {activeChapter && (
         <>

@@ -7,13 +7,15 @@ type ChapterListProps = {
   activeChapterId: string
   onSelectChapter: (id: string) => void
   onCreateScene: (chapterId: string) => void
+  onDeleteDocument: (id: string) => void
 }
 
 function ChapterList({
   chapters,
   activeChapterId,
   onSelectChapter,
-  onCreateScene
+  onCreateScene,
+  onDeleteDocument
 }: ChapterListProps) {
   const [expandedChapterIds, setExpandedChapterIds] = useState<Set<string>>(new Set())
 
@@ -58,14 +60,23 @@ function ChapterList({
 
               <button
                 type="button"
-                className={`chapter document-title ${
-                  chapter.id === activeChapterId ? 'active' : ''
-                }`}
+                className={`chapter document-title ${chapter.id === activeChapterId ? 'active' : ''
+                  }`}
                 onClick={() => onSelectChapter(chapter.id)}
               >
                 <span>▤</span>
 
                 <span>{chapter.title || `Capítulo ${chapterIndex + 1}`}</span>
+              </button>
+
+              <button
+                type="button"
+                className="document-delete-button"
+                onClick={() => onDeleteDocument(chapter.id)}
+                title="Excluir capítulo"
+                aria-label={`Excluir ${chapter.title}`}
+              >
+                ×
               </button>
 
               <button
@@ -86,24 +97,28 @@ function ChapterList({
               </button>
             </div>
 
-            {expanded && (
-              <div className="scene-list">
-                {scenes.map((scene, sceneIndex) => (
-                  <button
-                    key={scene.id}
-                    type="button"
-                    className={`chapter scene ${scene.id === activeChapterId ? 'active' : ''}`}
-                    onClick={() => onSelectChapter(scene.id)}
-                  >
-                    <span>◦</span>
+            {scenes.map((scene, sceneIndex) => (
+              <div key={scene.id} className="scene-row">
+                <button
+                  type="button"
+                  className={`chapter scene ${scene.id === activeChapterId ? 'active' : ''}`}
+                  onClick={() => onSelectChapter(scene.id)}
+                >
+                  <span>◦</span>
+                  <span>{scene.title || `Cena ${sceneIndex + 1}`}</span>
+                </button>
 
-                    <span>{scene.title || `Cena ${sceneIndex + 1}`}</span>
-                  </button>
-                ))}
-
-                {scenes.length === 0 && <p className="scene-empty">Nenhuma cena</p>}
+                <button
+                  type="button"
+                  className="document-delete-button"
+                  onClick={() => onDeleteDocument(scene.id)}
+                  title="Excluir cena"
+                  aria-label={`Excluir ${scene.title}`}
+                >
+                  ×
+                </button>
               </div>
-            )}
+            ))}
           </div>
         )
       })}
