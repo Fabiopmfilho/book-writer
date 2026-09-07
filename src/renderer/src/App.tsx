@@ -5,16 +5,14 @@ import './assets/main.css'
 
 import CharacterEditor from './components/CharacterEditor'
 import Editor from './components/Editor'
+import HomePage from './components/HomePage'
 import Inspector from './components/Inspector'
 import LocationEditor from './components/LocationEditor'
 import Sidebar from './components/Sidebar'
-import HomePage from './components/HomePage'
-
 import { db } from './database/db'
 import type { CharacterRecord, LocationRecord } from './database/models'
 import { updateEntityReferences } from './database/references'
 import { ensureInitialBook } from './database/seed'
-
 import type { Chapter } from './types/book'
 
 type Selection =
@@ -96,14 +94,14 @@ function App() {
     }
 
     const documentMissing =
-      selection?.type === 'document' && !documents.some((chapter) => chapter.id === selection.id)
+      selection.type === 'document' && !documents.some((document) => document.id === selection.id)
 
     const characterMissing =
-      selection?.type === 'character' &&
+      selection.type === 'character' &&
       !characters.some((character) => character.id === selection.id)
 
     const locationMissing =
-      selection?.type === 'location' && !locations.some((location) => location.id === selection.id)
+      selection.type === 'location' && !locations.some((location) => location.id === selection.id)
 
     if (documentMissing || characterMissing || locationMissing) {
       setSelection({ type: 'home' })
@@ -112,7 +110,7 @@ function App() {
 
   const activeDocument =
     selection?.type === 'document'
-      ? documents.find((chapter) => chapter.id === selection.id)
+      ? documents.find((document) => document.id === selection.id)
       : undefined
 
   const activeCharacter =
@@ -251,8 +249,63 @@ function App() {
     })
 
     if (selection?.type === 'document' && deletedIds.has(selection.id)) {
-      setSelection(null)
+      setSelection({ type: 'home' })
     }
+  }
+
+  async function reorderDocuments(documentIds: string[]) {
+    const now = new Date()
+
+    await db.transaction('rw', db.documents, async () => {
+      for (const [index, documentId] of documentIds.entries()) {
+        await db.documents.update(documentId, {
+          order: index,
+          updatedAt: now
+        })
+      }
+    })
+  }
+
+  async function moveScene(sceneId: string, targetChapterId: string) {
+    const scene = documents.find((document) => document.id === sceneId && document.type === 'scene')
+
+    const targetChapter = documents.find(
+      (document) => document.id === targetChapterId && document.type === 'chapter'
+    )
+
+    if (!scene || !targetChapter || scene.parentId === targetChapterId) {
+      return
+    }
+
+    const sourceScenes = documents
+      .filter(
+        (document) =>
+          document.type === 'scene' &&
+          document.parentId === scene.parentId &&
+          document.id !== scene.id
+      )
+      .sort((first, second) => first.order - second.order)
+
+    const targetScenes = documents
+      .filter((document) => document.type === 'scene' && document.parentId === targetChapterId)
+      .sort((first, second) => first.order - second.order)
+
+    const now = new Date()
+
+    await db.transaction('rw', db.documents, async () => {
+      for (const [index, sourceScene] of sourceScenes.entries()) {
+        await db.documents.update(sourceScene.id, {
+          order: index,
+          updatedAt: now
+        })
+      }
+
+      await db.documents.update(scene.id, {
+        parentId: targetChapterId,
+        order: targetScenes.length,
+        updatedAt: now
+      })
+    })
   }
 
   async function createCharacter() {
@@ -291,23 +344,6 @@ function App() {
     await updateEntityReferences(activeCharacter.id, activeCharacter.name)
   }
 
-  async function commitLocationName() {
-    if (!activeLocation) return
-
-    await updateEntityReferences(activeLocation.id, activeLocation.name)
-  }
-
-  function openReference(entityId: string) {
-    if (characters.some((character) => character.id === entityId)) {
-      setSelection({ type: 'character', id: entityId })
-      return
-    }
-
-    if (locations.some((location) => location.id === entityId)) {
-      setSelection({ type: 'location', id: entityId })
-    }
-  }
-
   async function createLocation() {
     if (!activeBookId) return
 
@@ -336,6 +372,23 @@ function App() {
       [field]: value,
       updatedAt: new Date()
     })
+  }
+
+  async function commitLocationName() {
+    if (!activeLocation) return
+
+    await updateEntityReferences(activeLocation.id, activeLocation.name)
+  }
+
+  function openReference(entityId: string) {
+    if (characters.some((character) => character.id === entityId)) {
+      setSelection({ type: 'character', id: entityId })
+      return
+    }
+
+    if (locations.some((location) => location.id === entityId)) {
+      setSelection({ type: 'location', id: entityId })
+    }
   }
 
   if (!book) {
@@ -390,6 +443,8 @@ function App() {
         onDeleteDocument={(documentId) => void deleteDocument(documentId)}
         onCreateCharacter={() => void createCharacter()}
         onCreateLocation={() => void createLocation()}
+        onReorderDocuments={(documentIds) => void reorderDocuments(documentIds)}
+        onMoveScene={(sceneId, targetChapterId) => void moveScene(sceneId, targetChapterId)}
       />
 
       {selection?.type === 'home' && (
@@ -472,6 +527,7 @@ function App() {
 
             <div className="inspector-section">
               <label>Como mencionar</label>
+
               <strong className="reference-name">@{activeCharacter.name}</strong>
             </div>
           </aside>
@@ -501,6 +557,7 @@ function App() {
 
             <div className="inspector-section">
               <label>Como mencionar</label>
+
               <strong className="reference-name">#{activeLocation.name}</strong>
             </div>
           </aside>

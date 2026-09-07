@@ -15,6 +15,8 @@ type SidebarProps = {
   activeChapterId: string | null
   activeCharacterId: string | null
   activeLocationId: string | null
+  homeActive: boolean
+  onSelectHome: () => void
   onSelectChapter: (id: string) => void
   onSelectCharacter: (id: string) => void
   onSelectLocation: (id: string) => void
@@ -23,8 +25,8 @@ type SidebarProps = {
   onCreateCharacter: () => void
   onCreateLocation: () => void
   onDeleteDocument: (id: string) => void
-  homeActive: boolean
-  onSelectHome: () => void
+  onReorderDocuments: (documentIds: string[]) => void
+  onMoveScene: (sceneId: string, targetChapterId: string) => void
 }
 
 function Sidebar({
@@ -35,16 +37,18 @@ function Sidebar({
   activeChapterId,
   activeCharacterId,
   activeLocationId,
+  homeActive,
+  onSelectHome,
   onSelectChapter,
   onSelectCharacter,
   onSelectLocation,
   onCreateChapter,
   onCreateScene,
-  onDeleteDocument,
   onCreateCharacter,
   onCreateLocation,
-  homeActive,
-  onSelectHome
+  onDeleteDocument,
+  onReorderDocuments,
+  onMoveScene
 }: SidebarProps) {
   const [manuscriptOpen, setManuscriptOpen] = useState(false)
   const [charactersOpen, setCharactersOpen] = useState(false)
@@ -85,6 +89,7 @@ function Sidebar({
             onCreateChapter()
           }}
           title="Novo capítulo"
+          aria-label="Criar capítulo"
         >
           +
         </button>
@@ -97,6 +102,8 @@ function Sidebar({
           onSelectChapter={onSelectChapter}
           onCreateScene={onCreateScene}
           onDeleteDocument={onDeleteDocument}
+          onReorderDocuments={onReorderDocuments}
+          onMoveScene={onMoveScene}
         />
       )}
 
@@ -120,6 +127,7 @@ function Sidebar({
             onCreateCharacter()
           }}
           title="Novo personagem"
+          aria-label="Criar personagem"
         >
           +
         </button>
@@ -153,6 +161,7 @@ function Sidebar({
             onCreateLocation()
           }}
           title="Novo lugar"
+          aria-label="Criar lugar"
         >
           +
         </button>

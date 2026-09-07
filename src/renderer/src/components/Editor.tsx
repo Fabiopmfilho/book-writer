@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 
@@ -26,6 +26,8 @@ function Editor({
   locations,
   onOpenReference
 }: EditorProps) {
+  const [title, setTitle] = useState(chapter.title)
+
   const charactersRef = useRef(characters)
   const locationsRef = useRef(locations)
   const openReferenceRef = useRef(onOpenReference)
@@ -42,10 +44,24 @@ function Editor({
     charactersRef.current = characters
   }, [characters])
 
-  const { status: saveStatus, scheduleSave: scheduleContentSave } = useDebouncedSave(
+  const { status: contentSaveStatus, scheduleSave: scheduleContentSave } = useDebouncedSave(
     (content) => onUpdate('content', content),
     500
   )
+
+  const { status: titleSaveStatus, scheduleSave: scheduleTitleSave } = useDebouncedSave(
+    (nextTitle) => onUpdate('title', nextTitle),
+    300
+  )
+
+  const saveStatus =
+    contentSaveStatus === 'error' || titleSaveStatus === 'error'
+      ? 'error'
+      : contentSaveStatus === 'saving' || titleSaveStatus === 'saving'
+        ? 'saving'
+        : contentSaveStatus === 'editing' || titleSaveStatus === 'editing'
+          ? 'editing'
+          : 'saved'
 
   const saveStatusLabel = {
     editing: 'Editando…',
@@ -117,9 +133,19 @@ function Editor({
       <div className="editor">
         <input
           className="chapter-title"
-          value={chapter.title}
-          onChange={(event) => onUpdate('title', event.target.value)}
-          placeholder="Título do capítulo"
+          value={title}
+          onChange={(event) => {
+            const nextTitle = event.target.value
+
+            setTitle(nextTitle)
+            scheduleTitleSave(nextTitle)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.currentTarget.blur()
+            }
+          }}
+          placeholder={chapter.type === 'scene' ? 'Título da cena' : 'Título do capítulo'}
         />
 
         <div className="editor-toolbar">
