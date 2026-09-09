@@ -71,3 +71,11 @@ export async function updateLocationRecord(
 export async function commitLocationNameRecord(locationId: string, name: string): Promise<void> {
   await updateEntityReferences(locationId, name)
 }
+
+export async function removeCharacterRecord(characterId: string): Promise<void> {
+  await db.characters.delete(characterId)
+}
+
+export async function removeLocationRecord(locationId: string): Promise<void> {
+  await db.locations.delete(locationId)
+}
