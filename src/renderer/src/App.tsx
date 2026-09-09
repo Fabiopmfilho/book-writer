@@ -11,9 +11,27 @@ import LocationEditor from './components/LocationEditor'
 import Sidebar from './components/Sidebar'
 import { db } from './database/db'
 import type { CharacterRecord, LocationRecord } from './database/models'
-import { updateEntityReferences } from './database/references'
 import { ensureInitialBook } from './database/seed'
 import type { Chapter } from './types/book'
+
+import {
+  createChapterRecord,
+  createSceneRecord,
+  getDocumentDeletionMessage,
+  moveSceneRecord,
+  removeDocumentRecord,
+  reorderDocumentRecords,
+  updateDocumentRecord
+} from './services/documentService'
+
+import {
+  commitCharacterNameRecord,
+  commitLocationNameRecord,
+  createCharacterRecord,
+  createLocationRecord,
+  updateCharacterRecord,
+  updateLocationRecord
+} from './services/entityService'
 
 type Selection =
   | { type: 'home' }
@@ -138,115 +156,39 @@ function App() {
   ) {
     if (!activeDocument) return
 
-    await db.documents.update(activeDocument.id, {
-      [field]: value,
-      updatedAt: new Date()
-    })
+    await updateDocumentRecord(activeDocument.id, field, value)
   }
 
   async function createChapter() {
     if (!activeBookId) return
 
-    const rootChapters = documents.filter(
-      (document) => document.type === 'chapter' && document.parentId === null
-    )
+    const chapter = await createChapterRecord(activeBookId, documents)
 
-    const now = new Date()
-
-    const chapter: Chapter = {
-      id: crypto.randomUUID(),
-      bookId: activeBookId,
-      parentId: null,
-      type: 'chapter',
-      title: `Capítulo ${rootChapters.length + 1}`,
-      content: '',
-      notes: '',
-      order: rootChapters.length,
-      createdAt: now,
-      updatedAt: now
-    }
-
-    await db.documents.add(chapter)
-    setSelection({ type: 'document', id: chapter.id })
+    setSelection({
+      type: 'document',
+      id: chapter.id
+    })
   }
 
   async function createScene(parentChapterId: string) {
     if (!activeBookId) return
 
-    const siblingScenes = documents.filter(
-      (document) => document.type === 'scene' && document.parentId === parentChapterId
-    )
+    const scene = await createSceneRecord(activeBookId, parentChapterId, documents)
 
-    const now = new Date()
-
-    const scene: Chapter = {
-      id: crypto.randomUUID(),
-      bookId: activeBookId,
-      parentId: parentChapterId,
-      type: 'scene',
-      title: `Cena ${siblingScenes.length + 1}`,
-      content: '',
-      notes: '',
-      order: siblingScenes.length,
-      createdAt: now,
-      updatedAt: now
-    }
-
-    await db.documents.add(scene)
-    setSelection({ type: 'document', id: scene.id })
+    setSelection({
+      type: 'document',
+      id: scene.id
+    })
   }
 
   async function deleteDocument(documentId: string) {
-    const documentRecord = documents.find((document) => document.id === documentId)
+    const message = getDocumentDeletionMessage(documentId, documents)
 
-    if (!documentRecord) return
-
-    const childScenes =
-      documentRecord.type === 'chapter'
-        ? documents.filter((document) => document.parentId === documentRecord.id)
-        : []
-
-    const message =
-      documentRecord.type === 'chapter'
-        ? childScenes.length > 0
-          ? `Excluir "${documentRecord.title}" e suas ${childScenes.length} cenas?`
-          : `Excluir o capítulo "${documentRecord.title}"?`
-        : `Excluir a cena "${documentRecord.title}"?`
-
-    if (!window.confirm(message)) {
+    if (!message || !window.confirm(message)) {
       return
     }
 
-    const deletedIds = new Set([documentRecord.id, ...childScenes.map((scene) => scene.id)])
-
-    await db.transaction('rw', db.documents, async () => {
-      if (childScenes.length > 0) {
-        await db.documents.bulkDelete(childScenes.map((scene) => scene.id))
-      }
-
-      await db.documents.delete(documentRecord.id)
-
-      const remainingDocuments = await db.documents
-        .where('bookId')
-        .equals(documentRecord.bookId)
-        .toArray()
-
-      const siblings = remainingDocuments
-        .filter(
-          (document) =>
-            document.type === documentRecord.type && document.parentId === documentRecord.parentId
-        )
-        .sort((first, second) => first.order - second.order)
-
-      for (const [index, sibling] of siblings.entries()) {
-        if (sibling.order !== index) {
-          await db.documents.update(sibling.id, {
-            order: index,
-            updatedAt: new Date()
-          })
-        }
-      }
-    })
+    const deletedIds = await removeDocumentRecord(documentId, documents)
 
     if (selection?.type === 'document' && deletedIds.has(selection.id)) {
       setSelection({ type: 'home' })
@@ -254,76 +196,22 @@ function App() {
   }
 
   async function reorderDocuments(documentIds: string[]) {
-    const now = new Date()
-
-    await db.transaction('rw', db.documents, async () => {
-      for (const [index, documentId] of documentIds.entries()) {
-        await db.documents.update(documentId, {
-          order: index,
-          updatedAt: now
-        })
-      }
-    })
+    await reorderDocumentRecords(documentIds)
   }
 
   async function moveScene(sceneId: string, targetChapterId: string) {
-    const scene = documents.find((document) => document.id === sceneId && document.type === 'scene')
-
-    const targetChapter = documents.find(
-      (document) => document.id === targetChapterId && document.type === 'chapter'
-    )
-
-    if (!scene || !targetChapter || scene.parentId === targetChapterId) {
-      return
-    }
-
-    const sourceScenes = documents
-      .filter(
-        (document) =>
-          document.type === 'scene' &&
-          document.parentId === scene.parentId &&
-          document.id !== scene.id
-      )
-      .sort((first, second) => first.order - second.order)
-
-    const targetScenes = documents
-      .filter((document) => document.type === 'scene' && document.parentId === targetChapterId)
-      .sort((first, second) => first.order - second.order)
-
-    const now = new Date()
-
-    await db.transaction('rw', db.documents, async () => {
-      for (const [index, sourceScene] of sourceScenes.entries()) {
-        await db.documents.update(sourceScene.id, {
-          order: index,
-          updatedAt: now
-        })
-      }
-
-      await db.documents.update(scene.id, {
-        parentId: targetChapterId,
-        order: targetScenes.length,
-        updatedAt: now
-      })
-    })
+    await moveSceneRecord(sceneId, targetChapterId, documents)
   }
 
   async function createCharacter() {
     if (!activeBookId) return
 
-    const now = new Date()
+    const character = await createCharacterRecord(activeBookId, characters.length)
 
-    const character: CharacterRecord = {
-      id: crypto.randomUUID(),
-      bookId: activeBookId,
-      name: `Personagem ${characters.length + 1}`,
-      description: '',
-      createdAt: now,
-      updatedAt: now
-    }
-
-    await db.characters.add(character)
-    setSelection({ type: 'character', id: character.id })
+    setSelection({
+      type: 'character',
+      id: character.id
+    })
   }
 
   async function updateCharacter(
@@ -332,34 +220,24 @@ function App() {
   ) {
     if (!activeCharacter) return
 
-    await db.characters.update(activeCharacter.id, {
-      [field]: value,
-      updatedAt: new Date()
-    })
+    await updateCharacterRecord(activeCharacter.id, field, value)
   }
 
   async function commitCharacterName() {
     if (!activeCharacter) return
 
-    await updateEntityReferences(activeCharacter.id, activeCharacter.name)
+    await commitCharacterNameRecord(activeCharacter.id, activeCharacter.name)
   }
 
   async function createLocation() {
     if (!activeBookId) return
 
-    const now = new Date()
+    const location = await createLocationRecord(activeBookId, locations.length)
 
-    const location: LocationRecord = {
-      id: crypto.randomUUID(),
-      bookId: activeBookId,
-      name: `Lugar ${locations.length + 1}`,
-      description: '',
-      createdAt: now,
-      updatedAt: now
-    }
-
-    await db.locations.add(location)
-    setSelection({ type: 'location', id: location.id })
+    setSelection({
+      type: 'location',
+      id: location.id
+    })
   }
 
   async function updateLocation(
@@ -368,16 +246,13 @@ function App() {
   ) {
     if (!activeLocation) return
 
-    await db.locations.update(activeLocation.id, {
-      [field]: value,
-      updatedAt: new Date()
-    })
+    await updateLocationRecord(activeLocation.id, field, value)
   }
 
   async function commitLocationName() {
     if (!activeLocation) return
 
-    await updateEntityReferences(activeLocation.id, activeLocation.name)
+    await commitLocationNameRecord(activeLocation.id, activeLocation.name)
   }
 
   function openReference(entityId: string) {
@@ -515,9 +390,13 @@ function App() {
       {activeCharacter && (
         <>
           <CharacterEditor
+            key={activeCharacter.id}
             character={activeCharacter}
-            onUpdate={(field, value) => void updateCharacter(field, value)}
-            onCommitName={() => void commitCharacterName()}
+            characters={characters}
+            locations={locations}
+            onUpdate={(field, value) => updateCharacter(field, value)}
+            onCommitName={() => commitCharacterName()}
+            onOpenReference={openReference}
           />
 
           <aside className="inspector">
@@ -527,7 +406,6 @@ function App() {
 
             <div className="inspector-section">
               <label>Como mencionar</label>
-
               <strong className="reference-name">@{activeCharacter.name}</strong>
             </div>
           </aside>
@@ -540,14 +418,10 @@ function App() {
             key={activeLocation.id}
             location={activeLocation}
             characters={characters}
+            locations={locations}
             onUpdate={(field, value) => updateLocation(field, value)}
-            onCommitName={() => void commitLocationName()}
-            onOpenCharacter={(characterId) =>
-              setSelection({
-                type: 'character',
-                id: characterId
-              })
-            }
+            onCommitName={() => commitLocationName()}
+            onOpenReference={openReference}
           />
 
           <aside className="inspector">
@@ -557,7 +431,6 @@ function App() {
 
             <div className="inspector-section">
               <label>Como mencionar</label>
-
               <strong className="reference-name">#{activeLocation.name}</strong>
             </div>
           </aside>
