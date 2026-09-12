@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
+import { useBookData } from './hooks/useBookData'
 
 import './assets/main.css'
 
-import CharacterEditor from './components/CharacterEditor'
-import Editor from './components/Editor'
-import HomePage from './components/HomePage'
-import Inspector from './components/Inspector'
-import LocationEditor from './components/LocationEditor'
-import Sidebar from './components/Sidebar'
-import { useBookData } from './hooks/useBookData'
 import type { CharacterRecord, LocationRecord } from './database/models'
 import type { Chapter } from './types/book'
+
+import HomePage from './components/HomePage'
+import Inspector from './components/Inspector'
+import LocationEditor from './components/editor/LocationEditor'
+import Sidebar from './components/sidebar/Sidebar'
+import CharacterEditor from './components/editor/CharacterEditor'
+import Editor from './components/editor/Editor'
 
 import {
   createChapterRecord,

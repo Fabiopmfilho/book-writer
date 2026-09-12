@@ -1,4 +1,4 @@
-import type { LocationRecord } from '../database/models'
+import type { LocationRecord } from '../../database/models'
 import EntityList from './EntityList'
 
 type LocationListProps = {

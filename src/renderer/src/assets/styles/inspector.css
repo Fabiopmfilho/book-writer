@@ -1,0 +1,52 @@
+.inspector {
+  background: #f0f0ed;
+  border-left: 1px solid #d5d5d1;
+}
+
+.inspector-header {
+  padding: 18px;
+
+  border-bottom: 1px solid #d5d5d1;
+}
+
+.inspector-header h2 {
+  margin: 0;
+
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  padding: 18px;
+
+  border-bottom: 1px solid #dcdcd8;
+}
+
+.inspector-section label {
+  color: #777;
+  font-size: 12px;
+}
+
+.inspector-section strong {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.inspector-section textarea {
+  min-height: 120px;
+
+  padding: 10px;
+
+  resize: vertical;
+
+  border: 1px solid #d5d5d1;
+  border-radius: 6px;
+
+  outline: none;
+
+  background: #fff;
+}

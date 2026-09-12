@@ -1,4 +1,4 @@
-import type { CharacterRecord } from '../database/models'
+import type { CharacterRecord } from '../../database/models'
 import EntityList from './EntityList'
 
 type CharacterListProps = {

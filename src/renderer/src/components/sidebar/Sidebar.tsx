@@ -1,5 +1,5 @@
-import type { CharacterRecord, LocationRecord } from '../database/models'
-import type { Chapter } from '../types/book'
+import type { CharacterRecord, LocationRecord } from '../../database/models'
+import type { Chapter } from '../../types/book'
 
 import ChapterList from './ChapterList'
 import CharacterList from './CharacterList'

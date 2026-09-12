@@ -3,8 +3,8 @@ import { useEffect, useRef } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 
-import type { CharacterRecord, LocationRecord } from '../database/models'
-import { useDebouncedSave } from '../hooks/useDebouncedSave'
+import type { CharacterRecord, LocationRecord } from '../../database/models'
+import { useDebouncedSave } from '../../hooks/useDebouncedSave'
 import { createReferenceMention } from './referenceMention'
 
 export type EditorSaveStatus = 'editing' | 'saving' | 'saved' | 'error'

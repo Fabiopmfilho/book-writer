@@ -1,0 +1,36 @@
+.document-drag-handle {
+  display: grid;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #aaa;
+  font-size: 15px;
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.document-group.dragging,
+.scene-row.dragging {
+  z-index: 20;
+  opacity: 0.55;
+}
+
+.document-group.drop-target > .document-row {
+  border-radius: 6px;
+  background: rgba(85, 69, 138, 0.13);
+  outline: 1px dashed rgba(85, 69, 138, 0.55);
+}
+
+.document-group.drop-target > .document-row .document-title {
+  color: #55458a;
+}

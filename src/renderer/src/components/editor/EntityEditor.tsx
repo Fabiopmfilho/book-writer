@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import type { CharacterRecord, LocationRecord } from '../database/models'
+import type { CharacterRecord, LocationRecord } from '../../database/models'
 import RichTextEditor, { type EditorSaveStatus } from './RichTextEditor'
 
 type EditableEntity = {

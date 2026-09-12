@@ -1,4 +1,4 @@
-import type { CharacterRecord, LocationRecord } from '../database/models'
+import type { CharacterRecord, LocationRecord } from '../../database/models'
 import EntityEditor from './EntityEditor'
 
 type CharacterEditorProps = {

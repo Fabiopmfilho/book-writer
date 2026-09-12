@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { DragDropProvider } from '@dnd-kit/react'
 import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 
-import type { Chapter } from '../types/book'
+import type { Chapter } from '../../types/book'
 
 type ChapterListProps = {
   chapters: Chapter[]

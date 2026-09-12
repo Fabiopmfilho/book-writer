@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 
-import type { Chapter } from '../types/book'
+import type { Chapter } from '../../types/book'
 
-import { useDebouncedSave } from '../hooks/useDebouncedSave'
+import { useDebouncedSave } from '../../hooks/useDebouncedSave'
 
-import type { CharacterRecord, LocationRecord } from '../database/models'
+import type { CharacterRecord, LocationRecord } from '../../database/models'
 import { createReferenceMention } from './referenceMention'
 
 type EditorProps = {
