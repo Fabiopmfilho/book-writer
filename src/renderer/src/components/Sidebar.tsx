@@ -1,30 +1,37 @@
-import { useState } from 'react'
-
 import type { CharacterRecord, LocationRecord } from '../database/models'
 import type { Chapter } from '../types/book'
 
 import ChapterList from './ChapterList'
 import CharacterList from './CharacterList'
 import LocationList from './LocationList'
+import SidebarSection from './SidebarSection'
 
 type SidebarProps = {
   bookTitle: string
   chapters: Chapter[]
   characters: CharacterRecord[]
   locations: LocationRecord[]
+
   activeChapterId: string | null
   activeCharacterId: string | null
   activeLocationId: string | null
+
   homeActive: boolean
+
   onSelectHome: () => void
   onSelectChapter: (id: string) => void
   onSelectCharacter: (id: string) => void
   onSelectLocation: (id: string) => void
+
   onCreateChapter: () => void
   onCreateScene: (chapterId: string) => void
   onCreateCharacter: () => void
   onCreateLocation: () => void
+
   onDeleteDocument: (id: string) => void
+  onDeleteCharacter: (id: string) => void
+  onDeleteLocation: (id: string) => void
+
   onReorderDocuments: (documentIds: string[]) => void
   onMoveScene: (sceneId: string, targetChapterId: string) => void
 }
@@ -47,13 +54,11 @@ function Sidebar({
   onCreateCharacter,
   onCreateLocation,
   onDeleteDocument,
+  onDeleteCharacter,
+  onDeleteLocation,
   onReorderDocuments,
   onMoveScene
 }: SidebarProps) {
-  const [manuscriptOpen, setManuscriptOpen] = useState(false)
-  const [charactersOpen, setCharactersOpen] = useState(false)
-  const [locationsOpen, setLocationsOpen] = useState(false)
-
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -69,33 +74,7 @@ function Sidebar({
         <span>{bookTitle}</span>
       </button>
 
-      <div className="sidebar-section-header">
-        <button
-          type="button"
-          className="sidebar-section-toggle"
-          onClick={() => setManuscriptOpen((open) => !open)}
-          aria-expanded={manuscriptOpen}
-        >
-          <span className="section-chevron">{manuscriptOpen ? '▾' : '▸'}</span>
-
-          <span>Capítulos</span>
-        </button>
-
-        <button
-          type="button"
-          className="sidebar-section-add"
-          onClick={() => {
-            setManuscriptOpen(true)
-            onCreateChapter()
-          }}
-          title="Novo capítulo"
-          aria-label="Criar capítulo"
-        >
-          +
-        </button>
-      </div>
-
-      {manuscriptOpen && (
+      <SidebarSection title="Capítulos" createTitle="Criar capítulo" onCreate={onCreateChapter}>
         <ChapterList
           chapters={chapters}
           activeChapterId={activeChapterId ?? ''}
@@ -105,75 +84,29 @@ function Sidebar({
           onReorderDocuments={onReorderDocuments}
           onMoveScene={onMoveScene}
         />
-      )}
+      </SidebarSection>
 
-      <div className="sidebar-section-header">
-        <button
-          type="button"
-          className="sidebar-section-toggle"
-          onClick={() => setCharactersOpen((open) => !open)}
-          aria-expanded={charactersOpen}
-        >
-          <span className="section-chevron">{charactersOpen ? '▾' : '▸'}</span>
-
-          <span>Personagens</span>
-        </button>
-
-        <button
-          type="button"
-          className="sidebar-section-add"
-          onClick={() => {
-            setCharactersOpen(true)
-            onCreateCharacter()
-          }}
-          title="Novo personagem"
-          aria-label="Criar personagem"
-        >
-          +
-        </button>
-      </div>
-
-      {charactersOpen && (
+      <SidebarSection
+        title="Personagens"
+        createTitle="Criar personagem"
+        onCreate={onCreateCharacter}
+      >
         <CharacterList
           characters={characters}
           activeCharacterId={activeCharacterId}
           onSelectCharacter={onSelectCharacter}
+          onDeleteCharacter={onDeleteCharacter}
         />
-      )}
+      </SidebarSection>
 
-      <div className="sidebar-section-header">
-        <button
-          type="button"
-          className="sidebar-section-toggle"
-          onClick={() => setLocationsOpen((open) => !open)}
-          aria-expanded={locationsOpen}
-        >
-          <span className="section-chevron">{locationsOpen ? '▾' : '▸'}</span>
-
-          <span>Lugares</span>
-        </button>
-
-        <button
-          type="button"
-          className="sidebar-section-add"
-          onClick={() => {
-            setLocationsOpen(true)
-            onCreateLocation()
-          }}
-          title="Novo lugar"
-          aria-label="Criar lugar"
-        >
-          +
-        </button>
-      </div>
-
-      {locationsOpen && (
+      <SidebarSection title="Lugares" createTitle="Criar lugar" onCreate={onCreateLocation}>
         <LocationList
           locations={locations}
           activeLocationId={activeLocationId}
           onSelectLocation={onSelectLocation}
+          onDeleteLocation={onDeleteLocation}
         />
-      )}
+      </SidebarSection>
     </aside>
   )
 }

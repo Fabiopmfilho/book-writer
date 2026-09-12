@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 
 import './assets/main.css'
 
@@ -9,9 +8,8 @@ import HomePage from './components/HomePage'
 import Inspector from './components/Inspector'
 import LocationEditor from './components/LocationEditor'
 import Sidebar from './components/Sidebar'
-import { db } from './database/db'
+import { useBookData } from './hooks/useBookData'
 import type { CharacterRecord, LocationRecord } from './database/models'
-import { ensureInitialBook } from './database/seed'
 import type { Chapter } from './types/book'
 
 import {
@@ -30,7 +28,9 @@ import {
   createCharacterRecord,
   createLocationRecord,
   updateCharacterRecord,
-  updateLocationRecord
+  updateLocationRecord,
+  removeCharacterRecord,
+  removeLocationRecord
 } from './services/entityService'
 
 type Selection =
@@ -40,77 +40,15 @@ type Selection =
   | { type: 'location'; id: string }
 
 function App() {
-  const [activeBookId, setActiveBookId] = useState<string | null>(null)
-  const [selection, setSelection] = useState<Selection | null>(null)
+  const [selection, setSelection] = useState<Selection>({
+    type: 'home'
+  })
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [inspectorVisible, setInspectorVisible] = useState(true)
 
-  useEffect(() => {
-    let mounted = true
-
-    void ensureInitialBook().then((bookId) => {
-      if (mounted) {
-        setActiveBookId(bookId)
-        setSelection({ type: 'home' })
-      }
-    })
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const book = useLiveQuery(() => {
-    if (!activeBookId) {
-      return undefined
-    }
-
-    return db.books.get(activeBookId)
-  }, [activeBookId])
-
-  const documents = useLiveQuery(
-    async (): Promise<Chapter[]> => {
-      if (!activeBookId) {
-        return []
-      }
-
-      return db.documents.where('bookId').equals(activeBookId).sortBy('order')
-    },
-    [activeBookId],
-    [] as Chapter[]
-  )
-
-  const characters = useLiveQuery(
-    async (): Promise<CharacterRecord[]> => {
-      if (!activeBookId) {
-        return []
-      }
-
-      return db.characters.where('bookId').equals(activeBookId).sortBy('name')
-    },
-    [activeBookId],
-    [] as CharacterRecord[]
-  )
-
-  const locations = useLiveQuery(
-    async (): Promise<LocationRecord[]> => {
-      if (!activeBookId) {
-        return []
-      }
-
-      return db.locations.where('bookId').equals(activeBookId).sortBy('name')
-    },
-    [activeBookId],
-    [] as LocationRecord[]
-  )
+  const { activeBookId, book, documents, characters, locations, loading } = useBookData()
 
   useEffect(() => {
-    if (!selection) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelection({ type: 'home' })
-      return
-    }
-
     const documentMissing =
       selection.type === 'document' && !documents.some((document) => document.id === selection.id)
 
@@ -122,22 +60,23 @@ function App() {
       selection.type === 'location' && !locations.some((location) => location.id === selection.id)
 
     if (documentMissing || characterMissing || locationMissing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection({ type: 'home' })
     }
   }, [documents, characters, locations, selection])
 
   const activeDocument =
-    selection?.type === 'document'
+    selection.type === 'document'
       ? documents.find((document) => document.id === selection.id)
       : undefined
 
   const activeCharacter =
-    selection?.type === 'character'
+    selection.type === 'character'
       ? characters.find((character) => character.id === selection.id)
       : undefined
 
   const activeLocation =
-    selection?.type === 'location'
+    selection.type === 'location'
       ? locations.find((location) => location.id === selection.id)
       : undefined
 
@@ -190,7 +129,7 @@ function App() {
 
     const deletedIds = await removeDocumentRecord(documentId, documents)
 
-    if (selection?.type === 'document' && deletedIds.has(selection.id)) {
+    if (selection.type === 'document' && deletedIds.has(selection.id)) {
       setSelection({ type: 'home' })
     }
   }
@@ -266,7 +205,7 @@ function App() {
     }
   }
 
-  if (!book) {
+  if (loading || !book) {
     return <div className="app-loading">Carregando livro...</div>
   }
 
@@ -277,6 +216,50 @@ function App() {
   ]
     .filter(Boolean)
     .join(' ')
+
+  async function deleteCharacter(characterId: string) {
+    const character = characters.find((currentCharacter) => currentCharacter.id === characterId)
+
+    if (!character) return
+
+    const name = character.name || 'Personagem sem nome'
+
+    if (
+      !window.confirm(
+        `Excluir o personagem "${name}"?\n\nAs menções existentes permanecerão no texto, mas não abrirão mais a ficha.`
+      )
+    ) {
+      return
+    }
+
+    await removeCharacterRecord(characterId)
+
+    if (selection.type === 'character' && selection.id === characterId) {
+      setSelection({ type: 'home' })
+    }
+  }
+
+  async function deleteLocation(locationId: string) {
+    const location = locations.find((currentLocation) => currentLocation.id === locationId)
+
+    if (!location) return
+
+    const name = location.name || 'Lugar sem nome'
+
+    if (
+      !window.confirm(
+        `Excluir o lugar "${name}"?\n\nAs menções existentes permanecerão no texto, mas não abrirão mais a ficha.`
+      )
+    ) {
+      return
+    }
+
+    await removeLocationRecord(locationId)
+
+    if (selection.type === 'location' && selection.id === locationId) {
+      setSelection({ type: 'home' })
+    }
+  }
 
   return (
     <div className={appClassName}>
@@ -301,15 +284,15 @@ function App() {
       </button>
 
       <Sidebar
-        homeActive={selection?.type === 'home'}
+        homeActive={selection.type === 'home'}
         onSelectHome={() => setSelection({ type: 'home' })}
         bookTitle={book.title}
         chapters={documents}
         characters={characters}
         locations={locations}
-        activeChapterId={selection?.type === 'document' ? selection.id : null}
-        activeCharacterId={selection?.type === 'character' ? selection.id : null}
-        activeLocationId={selection?.type === 'location' ? selection.id : null}
+        activeChapterId={selection.type === 'document' ? selection.id : null}
+        activeCharacterId={selection.type === 'character' ? selection.id : null}
+        activeLocationId={selection.type === 'location' ? selection.id : null}
         onSelectChapter={(id) => setSelection({ type: 'document', id })}
         onSelectCharacter={(id) => setSelection({ type: 'character', id })}
         onSelectLocation={(id) => setSelection({ type: 'location', id })}
@@ -320,9 +303,11 @@ function App() {
         onCreateLocation={() => void createLocation()}
         onReorderDocuments={(documentIds) => void reorderDocuments(documentIds)}
         onMoveScene={(sceneId, targetChapterId) => void moveScene(sceneId, targetChapterId)}
+        onDeleteCharacter={(characterId) => void deleteCharacter(characterId)}
+        onDeleteLocation={(locationId) => void deleteLocation(locationId)}
       />
 
-      {selection?.type === 'home' && (
+      {selection.type === 'home' && (
         <>
           <HomePage
             documents={documents}

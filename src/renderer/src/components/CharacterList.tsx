@@ -1,4 +1,5 @@
 import type { CharacterRecord } from '../database/models'
+import EntityList from './EntityList'
 
 type CharacterListProps = {
   characters: CharacterRecord[]
@@ -13,41 +14,17 @@ function CharacterList({
   onSelectCharacter,
   onDeleteCharacter
 }: CharacterListProps) {
-  if (characters.length === 0) {
-    return <p className="sidebar-empty">Nenhum personagem</p>
-  }
-
   return (
-    <div className="chapters">
-      {characters.map((character) => {
-        const name = character.name || 'Personagem sem nome'
-
-        return (
-          <div key={character.id} className="entity-row">
-            <button
-              type="button"
-              className={`chapter entity-title ${
-                character.id === activeCharacterId ? 'active' : ''
-              }`}
-              onClick={() => onSelectCharacter(character.id)}
-            >
-              <span>♙</span>
-              <span>{name}</span>
-            </button>
-
-            <button
-              type="button"
-              className="document-delete-button"
-              onClick={() => onDeleteCharacter(character.id)}
-              title="Excluir personagem"
-              aria-label={`Excluir ${name}`}
-            >
-              ×
-            </button>
-          </div>
-        )
-      })}
-    </div>
+    <EntityList
+      items={characters}
+      activeItemId={activeCharacterId}
+      icon="♙"
+      emptyMessage="Nenhum personagem"
+      fallbackName="Personagem sem nome"
+      deleteTitle="Excluir personagem"
+      onSelect={onSelectCharacter}
+      onDelete={onDeleteCharacter}
+    />
   )
 }
 

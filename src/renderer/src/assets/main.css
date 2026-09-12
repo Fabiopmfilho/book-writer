@@ -932,3 +932,31 @@ button {
 .document-group.drop-target > .document-row .document-title {
   color: #55458a;
 }
+
+.entity-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.entity-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.entity-title span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-row .document-delete-button {
+  flex: 0 0 auto;
+  opacity: 0;
+}
+
+.entity-row:hover .document-delete-button,
+.entity-row:focus-within .document-delete-button {
+  opacity: 1;
+}
