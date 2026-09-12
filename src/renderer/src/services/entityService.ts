@@ -1,5 +1,10 @@
 import { db } from '../database/db'
-import type { CharacterRecord, LocationRecord } from '../database/models'
+import type {
+  CharacterEditableField,
+  CharacterRecord,
+  LocationEditableField,
+  LocationRecord
+} from '../database/models'
 import { updateEntityReferences } from '../database/references'
 
 export async function createCharacterRecord(
@@ -12,7 +17,17 @@ export async function createCharacterRecord(
     id: crypto.randomUUID(),
     bookId,
     name: `Personagem ${characterCount + 1}`,
+    aliases: '',
+    role: '',
+    age: '',
+    status: 'active',
     description: '',
+    appearance: '',
+    personality: '',
+    motivation: '',
+    conflict: '',
+    backstory: '',
+    notes: '',
     createdAt: now,
     updatedAt: now
   }
@@ -24,7 +39,7 @@ export async function createCharacterRecord(
 
 export async function updateCharacterRecord(
   characterId: string,
-  field: keyof Pick<CharacterRecord, 'name' | 'description'>,
+  field: CharacterEditableField,
   value: string
 ): Promise<void> {
   await db.characters.update(characterId, {
@@ -47,7 +62,16 @@ export async function createLocationRecord(
     id: crypto.randomUUID(),
     bookId,
     name: `Lugar ${locationCount + 1}`,
+    locationType: '',
+    region: '',
+    status: 'active',
     description: '',
+    atmosphere: '',
+    history: '',
+    culture: '',
+    dangers: '',
+    plotImportance: '',
+    notes: '',
     createdAt: now,
     updatedAt: now
   }
@@ -59,7 +83,7 @@ export async function createLocationRecord(
 
 export async function updateLocationRecord(
   locationId: string,
-  field: keyof Pick<LocationRecord, 'name' | 'description'>,
+  field: LocationEditableField,
   value: string
 ): Promise<void> {
   await db.locations.update(locationId, {

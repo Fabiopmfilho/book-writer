@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useBookData } from './hooks/useBookData'
 
 import './assets/main.css'
 
-import type { CharacterRecord, LocationRecord } from './database/models'
-import type { Chapter } from './types/book'
-
-import HomePage from './components/HomePage'
-import Inspector from './components/Inspector'
-import LocationEditor from './components/editor/LocationEditor'
-import Sidebar from './components/sidebar/Sidebar'
 import CharacterEditor from './components/editor/CharacterEditor'
 import Editor from './components/editor/Editor'
+import LocationEditor from './components/editor/LocationEditor'
+
+import Sidebar from './components/sidebar/Sidebar'
+
+import type { CharacterEditableField, LocationEditableField } from './database/models'
+
+import { useBookData } from './hooks/useBookData'
 
 import {
   createChapterRecord,
@@ -28,11 +27,15 @@ import {
   commitLocationNameRecord,
   createCharacterRecord,
   createLocationRecord,
-  updateCharacterRecord,
-  updateLocationRecord,
   removeCharacterRecord,
-  removeLocationRecord
+  removeLocationRecord,
+  updateCharacterRecord,
+  updateLocationRecord
 } from './services/entityService'
+
+import type { Chapter } from './types/book'
+import HomePage from './components/HomePage'
+import Inspector from './components/Inspector'
 
 type Selection =
   | { type: 'home' }
@@ -154,10 +157,7 @@ function App() {
     })
   }
 
-  async function updateCharacter(
-    field: keyof Pick<CharacterRecord, 'name' | 'description'>,
-    value: string
-  ) {
+  async function updateCharacter(field: CharacterEditableField, value: string) {
     if (!activeCharacter) return
 
     await updateCharacterRecord(activeCharacter.id, field, value)
@@ -180,10 +180,7 @@ function App() {
     })
   }
 
-  async function updateLocation(
-    field: keyof Pick<LocationRecord, 'name' | 'description'>,
-    value: string
-  ) {
+  async function updateLocation(field: LocationEditableField, value: string) {
     if (!activeLocation) return
 
     await updateLocationRecord(activeLocation.id, field, value)
