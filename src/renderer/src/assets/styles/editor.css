@@ -6,8 +6,8 @@
 .editor-area {
   display: flex;
   flex-direction: column;
-
-  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 
   background: #ffffff;
 }
@@ -119,10 +119,6 @@
   color: #666;
 }
 
-.character-editor {
-  gap: 24px;
-}
-
 .character-field {
   display: flex;
   flex: 1;
@@ -211,8 +207,10 @@
   min-height: 0;
   flex-direction: column;
   gap: 22px;
-  overflow-y: auto;
   padding: 14px 2px 24px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .entity-tab-panel[hidden] {
@@ -268,6 +266,30 @@
 .entity-tab-panel .reference-description-editor,
 .entity-tab-panel .rich-text-editor {
   min-height: 240px;
+}
+
+.character-editor {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+}
+
+.entity-tab-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.entity-tab-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.entity-tab-panel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d2d2ce;
+}
+
+.entity-tab-panel::-webkit-scrollbar-thumb:hover {
+  background: #b8b8b3;
 }
 
 @media (max-width: 900px) {

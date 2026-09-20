@@ -48,7 +48,7 @@ function App() {
     type: 'home'
   })
   const [sidebarVisible, setSidebarVisible] = useState(true)
-  const [inspectorVisible, setInspectorVisible] = useState(true)
+  const [inspectorVisible, setInspectorVisible] = useState(false)
 
   const { activeBookId, book, documents, characters, locations, loading } = useBookData()
 

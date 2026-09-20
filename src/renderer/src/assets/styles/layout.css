@@ -19,6 +19,21 @@
   grid-template-columns: 0 minmax(0, 1fr) 0;
 }
 
+.sidebar,
+.inspector {
+  min-width: 0;
+  overflow: hidden;
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease;
+}
+
+.app.sidebar-hidden .sidebar,
+.app.inspector-hidden .inspector {
+  visibility: hidden;
+  opacity: 0;
+}
+
 .panel-toggle {
   position: fixed;
   top: 12px;
@@ -46,4 +61,32 @@
 .panel-toggle:hover {
   background: rgba(127, 127, 127, 0.14);
   color: #222;
+}
+
+.sidebar-panel-toggle {
+  left: 218px;
+}
+
+.app.sidebar-hidden .sidebar-panel-toggle {
+  left: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
+}
+
+.inspector-panel-toggle {
+  right: 12px;
+}
+
+.app.inspector-hidden .inspector-panel-toggle {
+  right: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
+}
+
+.app.sidebar-hidden .editor-header {
+  padding-left: 58px;
+}
+
+.app.inspector-hidden .editor-header {
+  padding-right: 58px;
 }
