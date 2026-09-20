@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 import type { CharacterRecord, LocationRecord } from '../../database/models'
 import { useDebouncedSave } from '../../hooks/useDebouncedSave'
 import { createReferenceMention } from './referenceMention'
+import EditorToolbar from './EditorToolbar'
 
 export type EditorSaveStatus = 'editing' | 'saving' | 'saved' | 'error'
 
@@ -97,45 +98,7 @@ function RichTextEditor({
 
   return (
     <>
-      {showToolbar && (
-        <div className="editor-toolbar">
-          <button
-            type="button"
-            className={editor?.isActive('bold') ? 'active' : ''}
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            title="Negrito"
-          >
-            B
-          </button>
-
-          <button
-            type="button"
-            className={editor?.isActive('italic') ? 'active' : ''}
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            title="Itálico"
-          >
-            I
-          </button>
-
-          <button
-            type="button"
-            className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-            title="Título"
-          >
-            H2
-          </button>
-
-          <button
-            type="button"
-            className={editor?.isActive('blockquote') ? 'active' : ''}
-            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            title="Citação"
-          >
-            “
-          </button>
-        </div>
-      )}
+      {showToolbar && <EditorToolbar editor={editor} />}
 
       <div className="rich-text-editor">
         <EditorContent editor={editor} />
