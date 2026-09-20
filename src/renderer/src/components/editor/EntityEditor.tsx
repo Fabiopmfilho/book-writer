@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import type { CharacterRecord, LocationRecord } from '../../database/models'
+
 import RichTextEditor, { type EditorSaveStatus } from './RichTextEditor'
 
 type EditableEntity = {
@@ -15,6 +16,9 @@ type EntityEditorProps = {
   descriptionClassName?: string
   characters: CharacterRecord[]
   locations: LocationRecord[]
+  children?: ReactNode
+  footerText?: string
+  externalSaveStatus?: EditorSaveStatus
   onUpdate: (field: 'name' | 'description', value: string) => void | Promise<void>
   onCommitName: () => void | Promise<void>
   onOpenReference: (entityId: string) => void
@@ -27,11 +31,16 @@ function EntityEditor({
   descriptionClassName,
   characters,
   locations,
+  children,
+  footerText = 'Use @ para personagens e # para lugares',
+  externalSaveStatus,
   onUpdate,
   onCommitName,
   onOpenReference
 }: EntityEditorProps) {
-  const [saveStatus, setSaveStatus] = useState<EditorSaveStatus>('saved')
+  const [internalSaveStatus, setInternalSaveStatus] = useState<EditorSaveStatus>('saved')
+
+  const saveStatus = externalSaveStatus ?? internalSaveStatus
 
   const saveStatusLabel = {
     editing: 'Editando…',
@@ -64,24 +73,26 @@ function EntityEditor({
           placeholder={namePlaceholder}
         />
 
-        <div className="character-field">
-          <span>Descrição</span>
+        {children ?? (
+          <div className="character-field">
+            <span>Descrição</span>
 
-          <RichTextEditor
-            content={entity.description}
-            characters={characters}
-            locations={locations}
-            className={descriptionClassName}
-            showToolbar
-            onSave={(description) => onUpdate('description', description)}
-            onOpenReference={onOpenReference}
-            onSaveStatusChange={setSaveStatus}
-          />
-        </div>
+            <RichTextEditor
+              content={entity.description}
+              characters={characters}
+              locations={locations}
+              className={descriptionClassName}
+              showToolbar
+              onSave={(description) => onUpdate('description', description)}
+              onOpenReference={onOpenReference}
+              onSaveStatusChange={setInternalSaveStatus}
+            />
+          </div>
+        )}
       </div>
 
       <footer className="editor-footer">
-        <span>Use @ para personagens e # para lugares</span>
+        <span>{footerText}</span>
 
         <span className={`save-status ${saveStatus}`}>{saveStatusLabel}</span>
       </footer>
