@@ -377,6 +377,13 @@ function App() {
             character={activeCharacter}
             characters={characters}
             locations={locations}
+            documents={documents}
+            onOpenDocument={(documentId) =>
+              setSelection({
+                type: 'document',
+                id: documentId
+              })
+            }
             onUpdate={(field, value) => updateCharacter(field, value)}
             onCommitName={() => commitCharacterName()}
             onOpenReference={openReference}
@@ -400,10 +407,17 @@ function App() {
           <LocationEditor
             key={activeLocation.id}
             location={activeLocation}
+            documents={documents}
             characters={characters}
             locations={locations}
             onUpdate={(field, value) => updateLocation(field, value)}
             onCommitName={() => commitLocationName()}
+            onOpenDocument={(documentId) =>
+              setSelection({
+                type: 'document',
+                id: documentId
+              })
+            }
             onOpenReference={openReference}
           />
 

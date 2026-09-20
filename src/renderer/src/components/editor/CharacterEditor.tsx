@@ -4,18 +4,22 @@ import type {
   CharacterEditableField,
   CharacterRecord,
   CharacterStatus,
+  DocumentRecord,
   LocationRecord
 } from '../../database/models'
 
 import EntityEditor from './EntityEditor'
+import EntityReferences from './EntityReferences'
 import RichTextEditor, { type EditorSaveStatus } from './RichTextEditor'
 
-type CharacterTab = 'overview' | 'development' | 'notes'
+type CharacterTab = 'overview' | 'development' | 'notes' | 'references'
 
 type CharacterEditorProps = {
   character: CharacterRecord
   characters: CharacterRecord[]
   locations: LocationRecord[]
+  documents: DocumentRecord[]
+  onOpenDocument: (documentId: string) => void
   onUpdate: (field: CharacterEditableField, value: string) => void | Promise<void>
   onCommitName: () => void | Promise<void>
   onOpenReference: (entityId: string) => void
@@ -35,6 +39,8 @@ function CharacterEditor({
   character,
   characters,
   locations,
+  documents,
+  onOpenDocument,
   onUpdate,
   onCommitName,
   onOpenReference
@@ -82,6 +88,14 @@ function CharacterEditor({
           onClick={() => setActiveTab('notes')}
         >
           Notas
+        </button>
+
+        <button
+          type="button"
+          className={activeTab === 'references' ? 'active' : ''}
+          onClick={() => setActiveTab('references')}
+        >
+          Referências
         </button>
       </nav>
 
@@ -233,6 +247,17 @@ function CharacterEditor({
             onSaveStatusChange={setNotesStatus}
           />
         </div>
+      </div>
+
+      <div className="entity-tab-panel" hidden={activeTab !== 'references'}>
+        <EntityReferences
+          entityId={character.id}
+          documents={documents}
+          characters={characters}
+          locations={locations}
+          onOpenDocument={onOpenDocument}
+          onOpenReference={onOpenReference}
+        />
       </div>
     </EntityEditor>
   )

@@ -292,6 +292,92 @@
   background: #b8b8b3;
 }
 
+.entity-references {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.entity-references-summary {
+  color: #777;
+  font-size: 12px;
+}
+
+.entity-reference-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entity-reference-card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #292929;
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.entity-reference-card:hover {
+  border-color: #aaa1c5;
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.entity-reference-card strong {
+  font-size: 14px;
+}
+
+.entity-reference-card p {
+  margin: 0;
+  color: #666;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.entity-reference-type {
+  color: #716493;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.entity-references-empty {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.entity-references-empty > span {
+  color: #aaa;
+  font-size: 30px;
+}
+
+.entity-references-empty h3 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+
+.entity-references-empty p {
+  max-width: 380px;
+  margin: 0;
+  color: #888;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .entity-form-grid {
     grid-template-columns: 1fr;
