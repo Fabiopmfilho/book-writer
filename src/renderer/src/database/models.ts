@@ -3,9 +3,28 @@ export type DocumentType = 'chapter' | 'scene' | 'note'
 export type BookRecord = {
   id: string
   title: string
+  subtitle: string
+  author: string
+  genre: string
+  language: string
+  synopsis: string
+  seriesName: string
+  volumeNumber: string
+  targetWordCount: number
   createdAt: Date
   updatedAt: Date
 }
+
+export type BookEditableField =
+  | 'title'
+  | 'subtitle'
+  | 'author'
+  | 'genre'
+  | 'language'
+  | 'synopsis'
+  | 'seriesName'
+  | 'volumeNumber'
+  | 'targetWordCount'
 
 export type DocumentRecord = {
   id: string

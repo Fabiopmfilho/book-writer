@@ -1,9 +1,16 @@
-import type { Chapter } from '../types/book'
+import { BookRecord, BookEditableField } from '@renderer/database/models'
+
+import BookSettings from './home/BookSettings'
+
+import { Chapter } from '@renderer/types/book'
+import { useState } from 'react'
 
 type HomePageProps = {
+  book: BookRecord
   documents: Chapter[]
   onOpenChapter: (id: string) => void
   onCreateChapter: () => void
+  onUpdateBook: (field: BookEditableField, value: string | number) => void | Promise<void>
 }
 
 function getWordCount(content: string): number {
@@ -12,10 +19,32 @@ function getWordCount(content: string): number {
   return text ? text.split(/\s+/).length : 0
 }
 
-function HomePage({ documents, onOpenChapter, onCreateChapter }: HomePageProps) {
+function HomePage({
+  book,
+  documents,
+  onOpenChapter,
+  onCreateChapter,
+  onUpdateBook
+}: HomePageProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
   const chapters = documents
     .filter((document) => document.type === 'chapter' && document.parentId === null)
     .sort((first, second) => first.order - second.order)
+
+  if (settingsOpen) {
+    return (
+      <main className="home-area">
+        <header className="editor-header">
+          <span>Configurações do projeto</span>
+        </header>
+
+        <div className="home-content">
+          <BookSettings book={book} onUpdate={onUpdateBook} onBack={() => setSettingsOpen(false)} />
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="home-area">
@@ -26,13 +55,24 @@ function HomePage({ documents, onOpenChapter, onCreateChapter }: HomePageProps) 
       <div className="home-content">
         <div className="home-heading">
           <div>
-            <h1>Capítulos</h1>
-            <p>Organize e acompanhe o progresso do seu livro.</p>
+            <h1>{book.title || 'Livro sem título'}</h1>
+
+            <p>{book.subtitle || 'Organize e acompanhe o progresso do seu livro.'}</p>
           </div>
 
-          <button type="button" onClick={onCreateChapter}>
-            Novo capítulo
-          </button>
+          <div className="home-heading-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setSettingsOpen(true)}
+            >
+              Configurações
+            </button>
+
+            <button type="button" onClick={onCreateChapter}>
+              Novo capítulo
+            </button>
+          </div>
         </div>
 
         {chapters.length > 0 ? (
@@ -73,6 +113,7 @@ function HomePage({ documents, onOpenChapter, onCreateChapter }: HomePageProps) 
         ) : (
           <div className="home-empty">
             <h2>Comece seu manuscrito</h2>
+
             <p>Crie o primeiro capítulo para começar a escrever.</p>
 
             <button type="button" onClick={onCreateChapter}>

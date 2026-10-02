@@ -63,6 +63,29 @@ class BookWriterDatabase extends Dexie {
             location.notes ??= ''
           })
       })
+
+    this.version(3)
+      .stores({
+        books: 'id, title, updatedAt',
+        documents: 'id, bookId, parentId, type, [bookId+order], updatedAt',
+        characters: 'id, bookId, name, [bookId+name]',
+        locations: 'id, bookId, name, [bookId+name]'
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table<BookRecord, string>('books')
+          .toCollection()
+          .modify((book) => {
+            book.subtitle ??= ''
+            book.author ??= ''
+            book.genre ??= ''
+            book.language ??= 'Português'
+            book.synopsis ??= ''
+            book.seriesName ??= ''
+            book.volumeNumber ??= ''
+            book.targetWordCount ??= 0
+          })
+      })
   }
 }
 

@@ -70,7 +70,6 @@ function Sidebar({
         className={`project-name ${homeActive ? 'active' : ''}`}
         onClick={onSelectHome}
       >
-        <span>📖</span>
         <span>{bookTitle}</span>
       </button>
 

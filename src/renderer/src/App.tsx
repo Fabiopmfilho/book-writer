@@ -7,8 +7,14 @@ import Editor from './components/editor/Editor'
 import LocationEditor from './components/editor/LocationEditor'
 
 import Sidebar from './components/sidebar/Sidebar'
+import type { Chapter } from './types/book'
+import type {
+  BookEditableField,
+  CharacterEditableField,
+  LocationEditableField
+} from './database/models'
 
-import type { CharacterEditableField, LocationEditableField } from './database/models'
+import { updateBookRecord } from './services/bookService'
 
 import { useBookData } from './hooks/useBookData'
 
@@ -33,7 +39,6 @@ import {
   updateLocationRecord
 } from './services/entityService'
 
-import type { Chapter } from './types/book'
 import HomePage from './components/HomePage'
 import Inspector from './components/Inspector'
 
@@ -51,6 +56,12 @@ function App() {
   const [inspectorVisible, setInspectorVisible] = useState(false)
 
   const { activeBookId, book, documents, characters, locations, loading } = useBookData()
+
+  async function updateBook(field: BookEditableField, value: string | number) {
+    if (!activeBookId) return
+
+    await updateBookRecord(activeBookId, field, value)
+  }
 
   useEffect(() => {
     const documentMissing =
@@ -308,9 +319,11 @@ function App() {
       {selection.type === 'home' && (
         <>
           <HomePage
+            book={book}
             documents={documents}
             onOpenChapter={(id) => setSelection({ type: 'document', id })}
             onCreateChapter={() => void createChapter()}
+            onUpdateBook={(field, value) => void updateBook(field, value)}
           />
 
           <aside className="inspector">
