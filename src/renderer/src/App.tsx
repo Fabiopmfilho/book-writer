@@ -5,18 +5,20 @@ import './assets/main.css'
 import CharacterEditor from './components/editor/CharacterEditor'
 import Editor from './components/editor/Editor'
 import LocationEditor from './components/editor/LocationEditor'
-
+import HomePage from './components/home/HomePage'
+import Inspector from './components/inspector/Inspector'
+import ChapterOverview from './components/manuscript/ChapterOverview'
 import Sidebar from './components/sidebar/Sidebar'
-import type { Chapter } from './types/book'
+
 import type {
   BookEditableField,
   CharacterEditableField,
   LocationEditableField
 } from './database/models'
 
-import { updateBookRecord } from './services/bookService'
-
 import { useBookData } from './hooks/useBookData'
+
+import { updateBookRecord } from './services/bookService'
 
 import {
   createChapterRecord,
@@ -39,8 +41,7 @@ import {
   updateLocationRecord
 } from './services/entityService'
 
-import HomePage from './components/HomePage'
-import Inspector from './components/Inspector'
+import type { Chapter } from './types/book'
 
 type Selection =
   | { type: 'home' }
@@ -48,20 +49,25 @@ type Selection =
   | { type: 'character'; id: string }
   | { type: 'location'; id: string }
 
+function getPlainText(content: string): string {
+  return new DOMParser().parseFromString(content, 'text/html').body.textContent?.trim() ?? ''
+}
+
+function getWordCount(content: string): number {
+  const text = getPlainText(content)
+
+  return text ? text.split(/\s+/).length : 0
+}
+
 function App() {
   const [selection, setSelection] = useState<Selection>({
     type: 'home'
   })
+
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [inspectorVisible, setInspectorVisible] = useState(false)
 
   const { activeBookId, book, documents, characters, locations, loading } = useBookData()
-
-  async function updateBook(field: BookEditableField, value: string | number) {
-    if (!activeBookId) return
-
-    await updateBookRecord(activeBookId, field, value)
-  }
 
   useEffect(() => {
     const documentMissing =
@@ -85,6 +91,10 @@ function App() {
       ? documents.find((document) => document.id === selection.id)
       : undefined
 
+  const activeChapter = activeDocument?.type === 'chapter' ? activeDocument : undefined
+
+  const activeScene = activeDocument?.type === 'scene' ? activeDocument : undefined
+
   const activeCharacter =
     selection.type === 'character'
       ? characters.find((character) => character.id === selection.id)
@@ -95,14 +105,33 @@ function App() {
       ? locations.find((location) => location.id === selection.id)
       : undefined
 
-  const plainText = activeDocument
-    ? (new DOMParser()
-        .parseFromString(activeDocument.content, 'text/html')
-        .body.textContent?.trim() ?? '')
-    : ''
+  const activeChapterScenes = activeChapter
+    ? documents
+        .filter((document) => document.type === 'scene' && document.parentId === activeChapter.id)
+        .sort((first, second) => first.order - second.order)
+    : []
 
-  const wordCount = plainText ? plainText.split(/\s+/).length : 0
-  const characterCount = plainText.length
+  const scenePlainText = activeScene ? getPlainText(activeScene.content) : ''
+
+  const sceneWordCount = scenePlainText ? scenePlainText.split(/\s+/).length : 0
+
+  const sceneCharacterCount = scenePlainText.length
+
+  const chapterWordCount = activeChapterScenes.reduce(
+    (total, scene) => total + getWordCount(scene.content),
+    0
+  )
+
+  const chapterCharacterCount = activeChapterScenes.reduce(
+    (total, scene) => total + getPlainText(scene.content).length,
+    0
+  )
+
+  async function updateBook(field: BookEditableField, value: string | number) {
+    if (!activeBookId) return
+
+    await updateBookRecord(activeBookId, field, value)
+  }
 
   async function updateDocument(
     field: keyof Pick<Chapter, 'title' | 'content' | 'notes'>,
@@ -180,6 +209,28 @@ function App() {
     await commitCharacterNameRecord(activeCharacter.id, activeCharacter.name)
   }
 
+  async function deleteCharacter(characterId: string) {
+    const character = characters.find((currentCharacter) => currentCharacter.id === characterId)
+
+    if (!character) return
+
+    const name = character.name || 'Personagem sem nome'
+
+    const confirmed = window.confirm(
+      `Excluir o personagem "${name}"?\n\n` +
+        'As menções existentes permanecerão no texto, ' +
+        'mas não abrirão mais a ficha.'
+    )
+
+    if (!confirmed) return
+
+    await removeCharacterRecord(characterId)
+
+    if (selection.type === 'character' && selection.id === characterId) {
+      setSelection({ type: 'home' })
+    }
+  }
+
   async function createLocation() {
     if (!activeBookId) return
 
@@ -203,14 +254,43 @@ function App() {
     await commitLocationNameRecord(activeLocation.id, activeLocation.name)
   }
 
+  async function deleteLocation(locationId: string) {
+    const location = locations.find((currentLocation) => currentLocation.id === locationId)
+
+    if (!location) return
+
+    const name = location.name || 'Lugar sem nome'
+
+    const confirmed = window.confirm(
+      `Excluir o lugar "${name}"?\n\n` +
+        'As menções existentes permanecerão no texto, ' +
+        'mas não abrirão mais a ficha.'
+    )
+
+    if (!confirmed) return
+
+    await removeLocationRecord(locationId)
+
+    if (selection.type === 'location' && selection.id === locationId) {
+      setSelection({ type: 'home' })
+    }
+  }
+
   function openReference(entityId: string) {
     if (characters.some((character) => character.id === entityId)) {
-      setSelection({ type: 'character', id: entityId })
+      setSelection({
+        type: 'character',
+        id: entityId
+      })
+
       return
     }
 
     if (locations.some((location) => location.id === entityId)) {
-      setSelection({ type: 'location', id: entityId })
+      setSelection({
+        type: 'location',
+        id: entityId
+      })
     }
   }
 
@@ -225,50 +305,6 @@ function App() {
   ]
     .filter(Boolean)
     .join(' ')
-
-  async function deleteCharacter(characterId: string) {
-    const character = characters.find((currentCharacter) => currentCharacter.id === characterId)
-
-    if (!character) return
-
-    const name = character.name || 'Personagem sem nome'
-
-    if (
-      !window.confirm(
-        `Excluir o personagem "${name}"?\n\nAs menções existentes permanecerão no texto, mas não abrirão mais a ficha.`
-      )
-    ) {
-      return
-    }
-
-    await removeCharacterRecord(characterId)
-
-    if (selection.type === 'character' && selection.id === characterId) {
-      setSelection({ type: 'home' })
-    }
-  }
-
-  async function deleteLocation(locationId: string) {
-    const location = locations.find((currentLocation) => currentLocation.id === locationId)
-
-    if (!location) return
-
-    const name = location.name || 'Lugar sem nome'
-
-    if (
-      !window.confirm(
-        `Excluir o lugar "${name}"?\n\nAs menções existentes permanecerão no texto, mas não abrirão mais a ficha.`
-      )
-    ) {
-      return
-    }
-
-    await removeLocationRecord(locationId)
-
-    if (selection.type === 'location' && selection.id === locationId) {
-      setSelection({ type: 'home' })
-    }
-  }
 
   return (
     <div className={appClassName}>
@@ -302,9 +338,24 @@ function App() {
         activeChapterId={selection.type === 'document' ? selection.id : null}
         activeCharacterId={selection.type === 'character' ? selection.id : null}
         activeLocationId={selection.type === 'location' ? selection.id : null}
-        onSelectChapter={(id) => setSelection({ type: 'document', id })}
-        onSelectCharacter={(id) => setSelection({ type: 'character', id })}
-        onSelectLocation={(id) => setSelection({ type: 'location', id })}
+        onSelectChapter={(id) =>
+          setSelection({
+            type: 'document',
+            id
+          })
+        }
+        onSelectCharacter={(id) =>
+          setSelection({
+            type: 'character',
+            id
+          })
+        }
+        onSelectLocation={(id) =>
+          setSelection({
+            type: 'location',
+            id
+          })
+        }
         onCreateChapter={() => void createChapter()}
         onCreateScene={(chapterId) => void createScene(chapterId)}
         onDeleteDocument={(documentId) => void deleteDocument(documentId)}
@@ -321,7 +372,12 @@ function App() {
           <HomePage
             book={book}
             documents={documents}
-            onOpenChapter={(id) => setSelection({ type: 'document', id })}
+            onOpenChapter={(id) =>
+              setSelection({
+                type: 'document',
+                id
+              })
+            }
             onCreateChapter={() => void createChapter()}
             onUpdateBook={(field, value) => void updateBook(field, value)}
           />
@@ -362,22 +418,47 @@ function App() {
         </>
       )}
 
-      {activeDocument && (
+      {activeChapter && (
+        <>
+          <ChapterOverview
+            chapter={activeChapter}
+            scenes={activeChapterScenes}
+            onOpenScene={(sceneId) =>
+              setSelection({
+                type: 'document',
+                id: sceneId
+              })
+            }
+            onCreateScene={() => void createScene(activeChapter.id)}
+            onDeleteScene={(sceneId) => void deleteDocument(sceneId)}
+            onReorderScenes={(sceneIds) => void reorderDocuments(sceneIds)}
+          />
+
+          <Inspector
+            chapter={activeChapter}
+            wordCount={chapterWordCount}
+            characterCount={chapterCharacterCount}
+            onUpdateNotes={(notes) => void updateDocument('notes', notes)}
+          />
+        </>
+      )}
+
+      {activeScene && (
         <>
           <Editor
-            key={activeDocument.id}
-            chapter={activeDocument}
+            key={activeScene.id}
+            chapter={activeScene}
             characters={characters}
             locations={locations}
-            wordCount={wordCount}
+            wordCount={sceneWordCount}
             onUpdate={(field, value) => updateDocument(field, value)}
             onOpenReference={openReference}
           />
 
           <Inspector
-            chapter={activeDocument}
-            wordCount={wordCount}
-            characterCount={characterCount}
+            chapter={activeScene}
+            wordCount={sceneWordCount}
+            characterCount={sceneCharacterCount}
             onUpdateNotes={(notes) => void updateDocument('notes', notes)}
           />
         </>
@@ -409,6 +490,7 @@ function App() {
 
             <div className="inspector-section">
               <label>Como mencionar</label>
+
               <strong className="reference-name">@{activeCharacter.name}</strong>
             </div>
           </aside>
@@ -441,6 +523,7 @@ function App() {
 
             <div className="inspector-section">
               <label>Como mencionar</label>
+
               <strong className="reference-name">#{activeLocation.name}</strong>
             </div>
           </aside>

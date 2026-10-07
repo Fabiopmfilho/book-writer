@@ -1,6 +1,6 @@
 import { BookRecord, BookEditableField } from '@renderer/database/models'
 
-import BookSettings from './home/BookSettings'
+import BookSettings from './BookSettings'
 
 import { Chapter } from '@renderer/types/book'
 import { useState } from 'react'

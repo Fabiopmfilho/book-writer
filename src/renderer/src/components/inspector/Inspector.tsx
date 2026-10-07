@@ -1,4 +1,4 @@
-import type { Chapter } from '../types/book'
+import type { Chapter } from '../../types/book'
 
 type InspectorProps = {
   chapter: Chapter
