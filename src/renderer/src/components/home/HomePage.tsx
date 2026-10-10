@@ -5,18 +5,14 @@ import BookSettings from './BookSettings'
 import { Chapter } from '@renderer/types/book'
 import { useState } from 'react'
 
+import { getWordCount } from '@renderer/utils/textStats'
+
 type HomePageProps = {
   book: BookRecord
   documents: Chapter[]
   onOpenChapter: (id: string) => void
   onCreateChapter: () => void
   onUpdateBook: (field: BookEditableField, value: string | number) => void | Promise<void>
-}
-
-function getWordCount(content: string): number {
-  const text = new DOMParser().parseFromString(content, 'text/html').body.textContent?.trim() ?? ''
-
-  return text ? text.split(/\s+/).length : 0
 }
 
 function HomePage({

@@ -15,8 +15,10 @@ import type {
   CharacterEditableField,
   LocationEditableField
 } from './database/models'
+import type { Chapter } from './types/book'
 
 import { useBookData } from './hooks/useBookData'
+import { getCharacterCount, getWordCount } from './utils/textStats'
 
 import { updateBookRecord } from './services/bookService'
 
@@ -41,23 +43,11 @@ import {
   updateLocationRecord
 } from './services/entityService'
 
-import type { Chapter } from './types/book'
-
 type Selection =
   | { type: 'home' }
   | { type: 'document'; id: string }
   | { type: 'character'; id: string }
   | { type: 'location'; id: string }
-
-function getPlainText(content: string): string {
-  return new DOMParser().parseFromString(content, 'text/html').body.textContent?.trim() ?? ''
-}
-
-function getWordCount(content: string): number {
-  const text = getPlainText(content)
-
-  return text ? text.split(/\s+/).length : 0
-}
 
 function App() {
   const [selection, setSelection] = useState<Selection>({
@@ -111,21 +101,19 @@ function App() {
         .sort((first, second) => first.order - second.order)
     : []
 
-  const scenePlainText = activeScene ? getPlainText(activeScene.content) : ''
+  const sceneWordCount = activeScene ? getWordCount(activeScene.content) : 0
 
-  const sceneWordCount = scenePlainText ? scenePlainText.split(/\s+/).length : 0
+  const sceneCharacterCount = activeScene ? getCharacterCount(activeScene.content) : 0
 
-  const sceneCharacterCount = scenePlainText.length
+  const chapterWordCount = activeChapter
+    ? getWordCount(activeChapter.content) +
+      activeChapterScenes.reduce((total, scene) => total + getWordCount(scene.content), 0)
+    : 0
 
-  const chapterWordCount = activeChapterScenes.reduce(
-    (total, scene) => total + getWordCount(scene.content),
-    0
-  )
-
-  const chapterCharacterCount = activeChapterScenes.reduce(
-    (total, scene) => total + getPlainText(scene.content).length,
-    0
-  )
+  const chapterCharacterCount = activeChapter
+    ? getCharacterCount(activeChapter.content) +
+      activeChapterScenes.reduce((total, scene) => total + getCharacterCount(scene.content), 0)
+    : 0
 
   async function updateBook(field: BookEditableField, value: string | number) {
     if (!activeBookId) return
