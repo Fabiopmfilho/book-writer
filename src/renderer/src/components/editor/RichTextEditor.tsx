@@ -5,7 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
 import TextAlign from '@tiptap/extension-text-align'
-import { FontFamily, FontSize, TextStyle } from '@tiptap/extension-text-style'
+import { Color, FontFamily, FontSize, TextStyle } from '@tiptap/extension-text-style'
 import { CharacterCount, Placeholder } from '@tiptap/extensions'
 import { EditorContent, useEditor } from '@tiptap/react'
 
@@ -80,6 +80,7 @@ function RichTextEditor({
       }),
 
       TextStyle,
+      Color,
       FontFamily,
       FontSize,
       TextAlign.configure({ types: ['heading', 'paragraph'], defaultAlignment: 'left' }),

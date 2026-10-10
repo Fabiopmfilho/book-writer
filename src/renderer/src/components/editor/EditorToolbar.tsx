@@ -24,12 +24,16 @@ import {
   Undo2
 } from 'lucide-react'
 
+import ColorPicker from './ColorPicker'
 import {
   editorFontFamilies,
   editorFontSizes,
-  normalizeFontFamily,
+  findFontOption,
+  firstFontFamily,
+  fontDisplayName,
   type SelectOption
 } from './editorFonts'
+import { getEffectiveTextStyle } from './editorTextStyle'
 
 type EditorToolbarProps = {
   editor: Editor | null
@@ -50,10 +54,16 @@ type ToolbarSelectProps = {
   className: string
   value: string
   options: SelectOption[]
+  resetLabel: string
+  /** Mostra cada opção na sua própria fonte (seletor de fonte). */
+  previewFonts?: boolean
   onChange: (value: string) => void
+  onReset: () => void
 }
 
 const iconProps = { size: 18, strokeWidth: 1.75, 'aria-hidden': true } as const
+
+const RESET_VALUE = '__reset__'
 
 function ToolbarButton({
   label,
@@ -78,23 +88,42 @@ function ToolbarButton({
   )
 }
 
-function ToolbarSelect({ label, className, value, options, onChange }: ToolbarSelectProps) {
-  const isKnownValue = options.some((option) => option.value === value)
-
+function ToolbarSelect({
+  label,
+  className,
+  value,
+  options,
+  resetLabel,
+  previewFonts = false,
+  onChange,
+  onReset
+}: ToolbarSelectProps) {
   return (
     <select
       className={`editor-toolbar-select ${className}`}
       aria-label={label}
       title={label}
       value={value}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => {
+        const selected = event.target.value
+
+        if (selected === RESET_VALUE) {
+          onReset()
+        } else if (selected !== '') {
+          onChange(selected)
+        }
+      }}
     >
       {options.map((option) => (
-        <option key={option.value} value={option.value}>
+        <option
+          key={option.value}
+          value={option.value}
+          style={previewFonts && option.value ? { fontFamily: option.value } : undefined}
+        >
           {option.label}
         </option>
       ))}
-      {!isKnownValue && <option value={value}>Outra</option>}
+      <option value={RESET_VALUE}>↺ {resetLabel}</option>
     </select>
   )
 }
@@ -104,10 +133,11 @@ function Divider() {
 }
 
 function Toolbar({ editor }: { editor: Editor }) {
+  // useEditorState faz a toolbar atualizar a cada seleção/transação.
   const state = useEditorState({
     editor,
     selector: (ctx) => {
-      const textStyle = ctx.editor.getAttributes('textStyle')
+      const textStyle = getEffectiveTextStyle(ctx.editor)
 
       return {
         canUndo: ctx.editor.can().undo(),
@@ -128,32 +158,36 @@ function Toolbar({ editor }: { editor: Editor }) {
         alignCenter: ctx.editor.isActive({ textAlign: 'center' }),
         alignRight: ctx.editor.isActive({ textAlign: 'right' }),
         alignJustify: ctx.editor.isActive({ textAlign: 'justify' }),
-        fontFamily: (textStyle.fontFamily as string | undefined) ?? '',
-        fontSize: (textStyle.fontSize as string | undefined) ?? ''
+        fontFamily: textStyle.fontFamily,
+        fontSize: textStyle.fontSize,
+        color: textStyle.color
       }
     }
   })
 
-  const currentFont =
-    editorFontFamilies.find(
-      (font) => normalizeFontFamily(font.value) === normalizeFontFamily(state.fontFamily)
-    )?.value ?? state.fontFamily
+  // --- Fonte: mostra a que está valendo, mesmo que não esteja na lista ---
+  const currentFamily = firstFontFamily(state.fontFamily)
+  const knownFont = findFontOption(state.fontFamily)
+  const fontValue = knownFont?.value ?? currentFamily
+  const fontOptions: SelectOption[] = knownFont
+    ? editorFontFamilies
+    : [
+        { label: currentFamily ? fontDisplayName(currentFamily) : '—', value: currentFamily },
+        ...editorFontFamilies
+      ]
 
-  const changeFontFamily = (value: string) => {
-    if (value === '') {
-      editor.chain().focus().unsetFontFamily().run()
-    } else {
-      editor.chain().focus().setFontFamily(value).run()
-    }
-  }
-
-  const changeFontSize = (value: string) => {
-    if (value === '') {
-      editor.chain().focus().unsetFontSize().run()
-    } else {
-      editor.chain().focus().setFontSize(value).run()
-    }
-  }
+  // --- Tamanho: idem ---
+  const knownSize = editorFontSizes.some((size) => size.value === state.fontSize)
+  const sizeLabel = state.fontSize.endsWith('px')
+    ? String(parseFloat(state.fontSize))
+    : state.fontSize || '—'
+  const sizeOptions: SelectOption[] = knownSize
+    ? editorFontSizes
+    : state.fontSize
+      ? [...editorFontSizes, { label: sizeLabel, value: state.fontSize }].sort(
+          (a, b) => parseFloat(a.value) - parseFloat(b.value)
+        )
+      : [{ label: '—', value: '' }, ...editorFontSizes]
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Formatação do texto">
@@ -180,17 +214,22 @@ function Toolbar({ editor }: { editor: Editor }) {
       <ToolbarSelect
         label="Fonte"
         className="editor-toolbar-select--font"
-        value={currentFont}
-        options={editorFontFamilies}
-        onChange={changeFontFamily}
+        value={fontValue}
+        options={fontOptions}
+        resetLabel="Restaurar fonte padrão"
+        previewFonts
+        onChange={(value) => editor.chain().focus().setFontFamily(value).run()}
+        onReset={() => editor.chain().focus().unsetFontFamily().run()}
       />
 
       <ToolbarSelect
         label="Tamanho da fonte"
         className="editor-toolbar-select--size"
         value={state.fontSize}
-        options={editorFontSizes}
-        onChange={changeFontSize}
+        options={sizeOptions}
+        resetLabel="Restaurar tamanho padrão"
+        onChange={(value) => editor.chain().focus().setFontSize(value).run()}
+        onReset={() => editor.chain().focus().unsetFontSize().run()}
       />
 
       <Divider />
@@ -239,6 +278,8 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <Highlighter {...iconProps} />
       </ToolbarButton>
+
+      <ColorPicker editor={editor} value={state.color} />
 
       <Divider />
 
