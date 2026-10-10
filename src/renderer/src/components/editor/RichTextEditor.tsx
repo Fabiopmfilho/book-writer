@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
+import StarterKit from '@tiptap/starter-kit'
 import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
+import TextAlign from '@tiptap/extension-text-align'
+import { FontFamily, FontSize, TextStyle } from '@tiptap/extension-text-style'
 import { CharacterCount, Placeholder } from '@tiptap/extensions'
 import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
 
 import type { CharacterRecord, LocationRecord } from '../../database/models'
 import { useDebouncedSave } from '../../hooks/useDebouncedSave'
@@ -25,6 +28,7 @@ type RichTextEditorProps = {
   onOpenReference: (entityId: string) => void
   onSaveStatusChange?: (status: EditorSaveStatus) => void
   onWordCountChange?: (words: number) => void
+  toolbarContainer?: HTMLElement | null
 }
 
 function RichTextEditor({
@@ -37,7 +41,8 @@ function RichTextEditor({
   onSave,
   onOpenReference,
   onSaveStatusChange,
-  onWordCountChange
+  onWordCountChange,
+  toolbarContainer
 }: RichTextEditorProps) {
   const charactersRef = useRef(characters)
   const locationsRef = useRef(locations)
@@ -73,6 +78,11 @@ function RichTextEditor({
         codeBlock: false,
         link: false
       }),
+
+      TextStyle,
+      FontFamily,
+      FontSize,
+      TextAlign.configure({ types: ['heading', 'paragraph'], defaultAlignment: 'left' }),
 
       Placeholder.configure({ placeholder }),
 
@@ -144,9 +154,13 @@ function RichTextEditor({
     }
   })
 
+  const toolbar = showToolbar ? <EditorToolbar editor={editor} /> : null
+
   return (
     <>
-      {showToolbar && <EditorToolbar editor={editor} />}
+      {toolbarContainer === undefined
+        ? toolbar
+        : toolbarContainer && toolbar && createPortal(toolbar, toolbarContainer)}
 
       <div className="rich-text-editor">
         <EditorContent editor={editor} />

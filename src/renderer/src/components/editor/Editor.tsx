@@ -34,6 +34,7 @@ function Editor({
   onOpenReference
 }: EditorProps) {
   const [title, setTitle] = useState(chapter.title)
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null)
 
   const [contentSaveStatus, setContentSaveStatus] = useState<EditorSaveStatus>('saved')
 
@@ -58,6 +59,8 @@ function Editor({
       <header className="editor-header">
         <span>{title || fallbackTitle}</span>
       </header>
+
+      <div className="editor-toolbar-slot" ref={setToolbarSlot} />
 
       <div className="editor">
         <input
@@ -87,6 +90,7 @@ function Editor({
           onSave={(content) => onUpdate('content', content)}
           onOpenReference={onOpenReference}
           onSaveStatusChange={setContentSaveStatus}
+          toolbarContainer={toolbarSlot}
         />
       </div>
 

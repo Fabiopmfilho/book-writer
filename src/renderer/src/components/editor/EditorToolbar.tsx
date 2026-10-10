@@ -3,6 +3,10 @@ import type { ReactNode } from 'react'
 import type { Editor } from '@tiptap/react'
 import { useEditorState } from '@tiptap/react'
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   Heading1,
   Heading2,
@@ -20,6 +24,13 @@ import {
   Undo2
 } from 'lucide-react'
 
+import {
+  editorFontFamilies,
+  editorFontSizes,
+  normalizeFontFamily,
+  type SelectOption
+} from './editorFonts'
+
 type EditorToolbarProps = {
   editor: Editor | null
 }
@@ -32,6 +43,14 @@ type ToolbarButtonProps = {
   disabled?: boolean
   onClick: () => void
   children: ReactNode
+}
+
+type ToolbarSelectProps = {
+  label: string
+  className: string
+  value: string
+  options: SelectOption[]
+  onChange: (value: string) => void
 }
 
 const iconProps = { size: 18, strokeWidth: 1.75, 'aria-hidden': true } as const
@@ -59,6 +78,27 @@ function ToolbarButton({
   )
 }
 
+function ToolbarSelect({ label, className, value, options, onChange }: ToolbarSelectProps) {
+  const isKnownValue = options.some((option) => option.value === value)
+
+  return (
+    <select
+      className={`editor-toolbar-select ${className}`}
+      aria-label={label}
+      title={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+      {!isKnownValue && <option value={value}>Outra</option>}
+    </select>
+  )
+}
+
 function Divider() {
   return <span className="editor-toolbar-divider" role="separator" />
 }
@@ -66,23 +106,54 @@ function Divider() {
 function Toolbar({ editor }: { editor: Editor }) {
   const state = useEditorState({
     editor,
-    selector: (ctx) => ({
-      canUndo: ctx.editor.can().undo(),
-      canRedo: ctx.editor.can().redo(),
-      bold: ctx.editor.isActive('bold'),
-      italic: ctx.editor.isActive('italic'),
-      underline: ctx.editor.isActive('underline'),
-      strike: ctx.editor.isActive('strike'),
-      highlight: ctx.editor.isActive('highlight'),
-      paragraph: ctx.editor.isActive('paragraph'),
-      h1: ctx.editor.isActive('heading', { level: 1 }),
-      h2: ctx.editor.isActive('heading', { level: 2 }),
-      h3: ctx.editor.isActive('heading', { level: 3 }),
-      bulletList: ctx.editor.isActive('bulletList'),
-      orderedList: ctx.editor.isActive('orderedList'),
-      blockquote: ctx.editor.isActive('blockquote')
-    })
+    selector: (ctx) => {
+      const textStyle = ctx.editor.getAttributes('textStyle')
+
+      return {
+        canUndo: ctx.editor.can().undo(),
+        canRedo: ctx.editor.can().redo(),
+        bold: ctx.editor.isActive('bold'),
+        italic: ctx.editor.isActive('italic'),
+        underline: ctx.editor.isActive('underline'),
+        strike: ctx.editor.isActive('strike'),
+        highlight: ctx.editor.isActive('highlight'),
+        paragraph: ctx.editor.isActive('paragraph'),
+        h1: ctx.editor.isActive('heading', { level: 1 }),
+        h2: ctx.editor.isActive('heading', { level: 2 }),
+        h3: ctx.editor.isActive('heading', { level: 3 }),
+        bulletList: ctx.editor.isActive('bulletList'),
+        orderedList: ctx.editor.isActive('orderedList'),
+        blockquote: ctx.editor.isActive('blockquote'),
+        alignLeft: ctx.editor.isActive({ textAlign: 'left' }),
+        alignCenter: ctx.editor.isActive({ textAlign: 'center' }),
+        alignRight: ctx.editor.isActive({ textAlign: 'right' }),
+        alignJustify: ctx.editor.isActive({ textAlign: 'justify' }),
+        fontFamily: (textStyle.fontFamily as string | undefined) ?? '',
+        fontSize: (textStyle.fontSize as string | undefined) ?? ''
+      }
+    }
   })
+
+  const currentFont =
+    editorFontFamilies.find(
+      (font) => normalizeFontFamily(font.value) === normalizeFontFamily(state.fontFamily)
+    )?.value ?? state.fontFamily
+
+  const changeFontFamily = (value: string) => {
+    if (value === '') {
+      editor.chain().focus().unsetFontFamily().run()
+    } else {
+      editor.chain().focus().setFontFamily(value).run()
+    }
+  }
+
+  const changeFontSize = (value: string) => {
+    if (value === '') {
+      editor.chain().focus().unsetFontSize().run()
+    } else {
+      editor.chain().focus().setFontSize(value).run()
+    }
+  }
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Formatação do texto">
@@ -103,6 +174,24 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <Redo2 {...iconProps} />
       </ToolbarButton>
+
+      <Divider />
+
+      <ToolbarSelect
+        label="Fonte"
+        className="editor-toolbar-select--font"
+        value={currentFont}
+        options={editorFontFamilies}
+        onChange={changeFontFamily}
+      />
+
+      <ToolbarSelect
+        label="Tamanho da fonte"
+        className="editor-toolbar-select--size"
+        value={state.fontSize}
+        options={editorFontSizes}
+        onChange={changeFontSize}
+      />
 
       <Divider />
 
@@ -183,6 +272,44 @@ function Toolbar({ editor }: { editor: Editor }) {
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >
         <Heading3 {...iconProps} />
+      </ToolbarButton>
+
+      <Divider />
+
+      <ToolbarButton
+        label="Alinhar à esquerda"
+        shortcut="Ctrl+Shift+L"
+        active={state.alignLeft}
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+      >
+        <AlignLeft {...iconProps} />
+      </ToolbarButton>
+
+      <ToolbarButton
+        label="Centralizar"
+        shortcut="Ctrl+Shift+E"
+        active={state.alignCenter}
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+      >
+        <AlignCenter {...iconProps} />
+      </ToolbarButton>
+
+      <ToolbarButton
+        label="Alinhar à direita"
+        shortcut="Ctrl+Shift+R"
+        active={state.alignRight}
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+      >
+        <AlignRight {...iconProps} />
+      </ToolbarButton>
+
+      <ToolbarButton
+        label="Justificar"
+        shortcut="Ctrl+Shift+J"
+        active={state.alignJustify}
+        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+      >
+        <AlignJustify {...iconProps} />
       </ToolbarButton>
 
       <Divider />
