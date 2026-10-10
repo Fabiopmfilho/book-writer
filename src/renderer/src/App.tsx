@@ -18,6 +18,7 @@ import type {
 import type { Chapter } from './types/book'
 
 import { useBookData } from './hooks/useBookData'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { getCharacterCount, getWordCount } from './utils/textStats'
 
 import { updateBookRecord } from './services/bookService'
@@ -56,8 +57,28 @@ function App() {
 
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [inspectorVisible, setInspectorVisible] = useState(false)
+  const [focusMode, setFocusMode] = useState(false)
 
   const { activeBookId, book, documents, characters, locations, loading } = useBookData()
+
+  useKeyboardShortcuts({
+    focusMode,
+    onToggleFocusMode: () => {
+      setFocusMode((current) => !current)
+    },
+    onExitFocusMode: () => {
+      setFocusMode(false)
+    },
+    onCreateChapter: () => {
+      void createChapter()
+    },
+    onToggleSidebar: () => {
+      setSidebarVisible((visible) => !visible)
+    },
+    onToggleInspector: () => {
+      setInspectorVisible((visible) => !visible)
+    }
+  })
 
   useEffect(() => {
     const documentMissing =
@@ -289,7 +310,8 @@ function App() {
   const appClassName = [
     'app',
     !sidebarVisible ? 'sidebar-hidden' : '',
-    !inspectorVisible ? 'inspector-hidden' : ''
+    !inspectorVisible ? 'inspector-hidden' : '',
+    focusMode ? 'focus-mode' : ''
   ]
     .filter(Boolean)
     .join(' ')
