@@ -9,6 +9,7 @@ import HomePage from './components/home/HomePage'
 import Inspector from './components/inspector/Inspector'
 import ChapterOverview from './components/manuscript/ChapterOverview'
 import Sidebar from './components/sidebar/Sidebar'
+import QuickSearch from './components/search/QuickSearch'
 
 import type {
   BookEditableField,
@@ -58,6 +59,7 @@ function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [inspectorVisible, setInspectorVisible] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false)
 
   const { activeBookId, book, documents, characters, locations, loading } = useBookData()
 
@@ -77,6 +79,9 @@ function App() {
     },
     onToggleInspector: () => {
       setInspectorVisible((visible) => !visible)
+    },
+    onOpenQuickSearch: () => {
+      setQuickSearchOpen(true)
     }
   })
 
@@ -318,6 +323,37 @@ function App() {
 
   return (
     <div className={appClassName}>
+      <QuickSearch
+        open={quickSearchOpen}
+        documents={documents}
+        characters={characters}
+        locations={locations}
+        onClose={() => setQuickSearchOpen(false)}
+        onSelect={(result) => {
+          setQuickSearchOpen(false)
+
+          if (result.type === 'document') {
+            setSelection({
+              type: 'document',
+              id: result.id
+            })
+            return
+          }
+
+          if (result.type === 'character') {
+            setSelection({
+              type: 'character',
+              id: result.id
+            })
+            return
+          }
+
+          setSelection({
+            type: 'location',
+            id: result.id
+          })
+        }}
+      />
       <button
         type="button"
         className="panel-toggle sidebar-panel-toggle"
@@ -327,7 +363,6 @@ function App() {
       >
         {sidebarVisible ? '‹‹' : '››'}
       </button>
-
       <button
         type="button"
         className="panel-toggle inspector-panel-toggle"
@@ -337,7 +372,6 @@ function App() {
       >
         {inspectorVisible ? '››' : '‹‹'}
       </button>
-
       <Sidebar
         homeActive={selection.type === 'home'}
         onSelectHome={() => setSelection({ type: 'home' })}
@@ -376,7 +410,6 @@ function App() {
         onDeleteCharacter={(characterId) => void deleteCharacter(characterId)}
         onDeleteLocation={(locationId) => void deleteLocation(locationId)}
       />
-
       {selection.type === 'home' && (
         <>
           <HomePage
@@ -427,7 +460,6 @@ function App() {
           </aside>
         </>
       )}
-
       {activeChapter && (
         <>
           <ChapterOverview
@@ -452,7 +484,6 @@ function App() {
           />
         </>
       )}
-
       {activeScene && (
         <>
           <Editor
@@ -473,7 +504,6 @@ function App() {
           />
         </>
       )}
-
       {activeCharacter && (
         <>
           <CharacterEditor
@@ -506,7 +536,6 @@ function App() {
           </aside>
         </>
       )}
-
       {activeLocation && (
         <>
           <LocationEditor

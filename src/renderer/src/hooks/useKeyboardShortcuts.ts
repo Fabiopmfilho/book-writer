@@ -7,6 +7,7 @@ interface KeyboardShortcutOptions {
   onCreateChapter: () => void
   onToggleSidebar: () => void
   onToggleInspector: () => void
+  onOpenQuickSearch: () => void
 }
 
 export function useKeyboardShortcuts({
@@ -15,7 +16,8 @@ export function useKeyboardShortcuts({
   onExitFocusMode,
   onCreateChapter,
   onToggleSidebar,
-  onToggleInspector
+  onToggleInspector,
+  onOpenQuickSearch
 }: KeyboardShortcutOptions): void {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -51,6 +53,12 @@ export function useKeyboardShortcuts({
         event.preventDefault()
         onToggleInspector()
       }
+
+      if (key === 'p' && !event.shiftKey && !event.altKey) {
+        event.preventDefault()
+        onOpenQuickSearch()
+        return
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -64,6 +72,7 @@ export function useKeyboardShortcuts({
     onExitFocusMode,
     onCreateChapter,
     onToggleSidebar,
-    onToggleInspector
+    onToggleInspector,
+    onOpenQuickSearch
   ])
 }
